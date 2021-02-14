@@ -12,12 +12,110 @@ output:
 ---
 
 
-```{r setup, include=FALSE}
+```{r setup, echo=F, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(data.table)
+library(ggplot2)
+frasier_data <-
+  fread("frasier-analysis_files/frasier_script_clean.csv")
 ```
 
 Distill is a publication format for scientific and technical writing, native to the web.
 
 Learn more about using Distill at <https://rstudio.github.io/distill>.
 
+```{r lineSummary, echo=F}
+frasier_line_sum <-
+  frasier_data[character %in% c("Daphne", "Frasier", "Martin", "Niles", "Roz"),
+             .(n_lines = .N,
+               n_chars = sum(nchar(lines))),
+             by = c("character", "episode", "season")]
+
+main_char_colours <-
+  c(
+    "Daphne" = "#f4f1de",
+    "Frasier" = "#e07a5f",
+    "Martin" = "#3d405b",
+    "Niles" = "#81b29a",
+    "Roz" = "#f2cc8f"
+  )
+
+```
+
+```{r}
+main_char_avg_line <- 
+  frasier_line_sum[, .(avg_n_lines = round(mean(n_lines), 2)), by = c("character", "season")]
+
+dcast(main_char_avg_line,
+      character ~ season,
+      value.var = "avg_n_lines")
+```
+
+
+
+```{r linePlot, echo=F, fig.cap=""}
+ggplot(frasier_line_sum, aes(x = episode, y = n_lines,
+                             group = character, colour = character)) +
+  geom_line() +
+  scale_x_continuous(
+    breaks = c(1, 1:24*5)
+  ) +
+  scale_colour_manual(
+    values = main_char_colours
+  ) +
+  labs(
+    x = "Episode",
+    y = "Number of Lines",
+    colour = "Characters"
+  ) +
+  theme(
+    legend.position = "bottom",
+    legend.key = element_rect(
+      fill = "white",
+      colour = "black"      
+    ),
+    panel.background = element_rect(
+      fill = "white",
+      colour = "black"
+    ),
+    strip.background = element_rect(
+      colour = "#81b29a",
+      fill = "#f4f1de"
+    )
+  ) +
+  facet_wrap(~season, scales = "free_y")
+```
+
+```{r charPlot, echo=F, fig.cap=""}
+ggplot(frasier_line_sum, aes(x = episode, y = n_chars,
+                             group = character, colour = character)) +
+  geom_line() +
+  scale_x_continuous(
+    breaks = c(1, 1:24*5)
+  ) +
+  scale_colour_manual(
+    values = main_char_colours
+  ) +
+  labs(
+    x = "Episode",
+    y = "Number of Characters",
+    colour = "Characters"
+  ) +
+  theme(
+    legend.position = "bottom",
+    legend.key = element_rect(
+      fill = "white",
+      colour = "black"      
+    ),
+    panel.background = element_rect(
+      fill = "white",
+      colour = "black"
+    ),
+    strip.background = element_rect(
+      colour = "#81b29a",
+      fill = "#f4f1de"
+    )
+  ) +
+  facet_wrap(~season, scales = "free_y")
+```
 
