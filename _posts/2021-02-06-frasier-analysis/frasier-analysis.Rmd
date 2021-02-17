@@ -1,7 +1,10 @@
 ---
 title: "Frasier Analysis"
+categories:
+  - frasier
+  - text mining
 description: |
-  A short description of the post.
+  In this post we undertake a descriptive and text mining analysis of the lines spoken on Frasier.
 author:
   - name: Alex Wainwright
     url: https://example.com/norajones
@@ -16,13 +19,25 @@ output:
 knitr::opts_chunk$set(echo = FALSE)
 library(data.table)
 library(ggplot2)
+
 frasier_data <-
   fread("frasier-analysis_files/frasier_script_clean.csv")
+
+frasier_data[, index := 1:nrow(.SD), by = "title"]
+
+frasier_cp = c(
+  tofo = "#ede5da",
+  putty = "#e4dac6",
+  oatmeal = "#dfceb2",
+  almond = "#d9c1a3",
+  harvest_wheat = "#cfb99e",
+  buff = "#d1b68b"
+)
 ```
 
-Distill is a publication format for scientific and technical writing, native to the web.
+# Overview
 
-Learn more about using Distill at <https://rstudio.github.io/distill>.
+After re-watching Frasier a few times over the course of the Victoria lockdowns, I decided to undertake a project to extract and analyse text contained in the Frasier scripts. After a weekend spent getting to grips with the BeautifulSoup and Request libraries, I have managed to extract and clean the data (not 100% guaranteed). The original data source can be found [here](http://www.kacl780.net/frasier/transcripts/) and can be downloaded [here](https://github.com/alexwhitelockw/frasier_episode_scripts).
 
 ```{r lineSummary, echo=F}
 frasier_line_sum <-
@@ -42,20 +57,76 @@ main_char_colours <-
 
 ```
 
-```{r}
+# Character Lines
+
+## By Season
+
+Let's first start by exploring some descriptives assoicated with the number of lines each character has across the 11 seasons. Focus of this analysis is solely on the five main characters: *Daphne*, *Frasier*, *Martin*, *Niles*, and *Roz*. Table \@ref(tab:linesTable) and Figure \@ref(fig:linesPlot) show the average number of lines per character across seasons. We can see that Frasier obviously dominates in the number of lines spoken and, for the most part, varying between 80 to 90 lines per season. However, seasons 9 and 10 show a dip to 70 and 67 lines, respectively. It may have been the case that episodes across these 2 seasons emphasised other characters (e.g., Roz's new job and Nile's heart surgery take place in season 10). Nile's lines peaked in season 6, which is understandable as his story centers on his divorce from Maris. 
+
+```{r linesTable}
 main_char_avg_line <- 
   frasier_line_sum[, .(avg_n_lines = round(mean(n_lines), 2)), by = c("character", "season")]
 
-dcast(main_char_avg_line,
-      character ~ season,
-      value.var = "avg_n_lines")
+knitr::kable(
+  dcast(main_char_avg_line,
+        character ~ season,
+        value.var = "avg_n_lines"),
+  col.names = c("Character", seq(1,11,1)),
+  caption = "The average (mean) number of lines for each of the five main characters on Frasier across 11 seasons. As expected, Frasier consistently has the highest number of lines of any of the characters, followed by Niles and Martin. Daphne and Roz appear to be comparable, but have far fewer lines over the seasons than Frasier, Martin, or Niles."
+)
 ```
 
+Martin is quite consistent across the 11 seasons in regards to the average number of lines. The same can generally be said of Daphne and Roz. Interestingly, Roz did see an uptick in lines beyond season 1.
 
+```{r linesPlot, fig.align="center", fig.cap="Average (mean) number of lines spoken by the five main characters in Frasier across 11 seasons."}
+ggplot(frasier_line_sum, aes(x = season, y = n_lines,
+                             group = character, 
+                             linetype = character,
+                             colour = character)) +
+  stat_summary(fun = "mean",
+               geom = "line",
+               size = 1) +
+  scale_x_continuous(
+    breaks = c(1, 1:24*1)
+  ) +
+  scale_colour_manual(
+    values = main_char_colours
+  ) +
+  labs(
+    x = "Season",
+    y = "Expected Number of Lines",
+    colour = "Characters",
+    linetype = "Characters"
+  ) +
+  theme(
+    legend.position = "bottom",
+    legend.key = element_rect(
+      fill = "white",
+      colour = "black"      
+    ),
+    panel.background = element_rect(
+      fill = "white",
+      colour = "black"
+    ),
+    strip.background = element_rect(
+      colour = frasier_cp[6],
+      fill = frasier_cp[1]
+    ),
+    text = element_text(
+      family = "mono"
+    )
+  ) 
+```
 
-```{r linePlot, echo=F, fig.cap=""}
+## By Episode
+
+Figure \@ref(fig:linePlot) presents the number of lines by each of the main characters at the level of each episode. From this perspective, we can see far more clearly as to why Frasier seemingly showed, on average, fewer lines during seasons 9 and 10. Additionally, you can see occasions when the number of lines spoken by Niles exceeds those of Frasier. For example, Kelsey Grammer directed Season 3 Episode 13 (*Moon Dance*), resulting in the character of Frasier making a very limited appearance. Instead, the episode largely focused on the dynamics between Niles and Daphne, hence the greater number of lines for these two characters. We can also see another occasion in Season 6 Episode 16 (*Decoys*) wherein Niles devises a plan to reunite Roz and her ex-boyfriend Donny. 
+
+```{r linePlot, echo=F, fig.cap="Number of lines spoken by the five main characters in Frasier across each episode for the 11 season run.", fig.align="center"}
 ggplot(frasier_line_sum, aes(x = episode, y = n_lines,
-                             group = character, colour = character)) +
+                             group = character, 
+                             linetype = character,
+                             colour = character)) +
   geom_line() +
   scale_x_continuous(
     breaks = c(1, 1:24*5)
@@ -66,7 +137,8 @@ ggplot(frasier_line_sum, aes(x = episode, y = n_lines,
   labs(
     x = "Episode",
     y = "Number of Lines",
-    colour = "Characters"
+    colour = "Characters",
+    linetype = "Characters"
   ) +
   theme(
     legend.position = "bottom",
@@ -79,43 +151,102 @@ ggplot(frasier_line_sum, aes(x = episode, y = n_lines,
       colour = "black"
     ),
     strip.background = element_rect(
-      colour = "#81b29a",
-      fill = "#f4f1de"
+      colour = frasier_cp[6],
+      fill = frasier_cp[1]
+    ),
+    text = element_text(
+      family = "mono"
     )
   ) +
   facet_wrap(~season, scales = "free_y")
 ```
 
-```{r charPlot, echo=F, fig.cap=""}
-ggplot(frasier_line_sum, aes(x = episode, y = n_chars,
-                             group = character, colour = character)) +
-  geom_line() +
-  scale_x_continuous(
-    breaks = c(1, 1:24*5)
-  ) +
-  scale_colour_manual(
-    values = main_char_colours
+# Keywords
+
+Beyond an examination of the number of lines spoken by each of the main characters, we can also explore the keywords associated with each episode. To do this, we can use the *Term Frequency - Inverse Document Frequency* measure (*tf-idf*). This statistic is essentially the frequency of words multiplied by how common those words are across all documents (i.e., words that are found across many documents are downweighted, whilst rare words are assigned a higher weight). Given that there are `r nrow(unique(frasier_data[,4:5]))` episodes of Frasier, exploring the keywords each episode would be tedious. Instead, a random sample of 5 episodes (Figure \@ref(fig:tfidfPlot)) is used and we will explore how well the keywords summarise each episode.
+
+```{r tfidfPlot, fig.align="center", fig.cap="Top words, based on tf-idf, across a random sample of 5 episodes."}
+
+set.seed(20210214)
+
+frasier_tokens <-
+  tidytext::unnest_tokens(frasier_data, input = lines, output = words)
+
+frasier_tokens <-
+  frasier_tokens[, .(word_count = .N), by = c("title", "words")]
+
+frasier_tf_idf <-
+  tidytext::bind_tf_idf(frasier_tokens, words, title, word_count)
+
+setorder(frasier_tf_idf, title, -tf_idf)
+
+frasier_tf_idf[, rnk_word := frank(-tf_idf), by = "title"]
+
+sampled_titles <-
+  sample(unique(frasier_tf_idf$title), 5)
+
+sampled_tf_idf <-
+  frasier_tf_idf[title %in% sampled_titles & rnk_word %in% c(1:10)]
+
+ggplot(sampled_tf_idf, aes(x = reorder(words, tf_idf), y = tf_idf)) +
+  geom_col(
+    colour = frasier_cp[4],
+    fill = frasier_cp[3]
   ) +
   labs(
-    x = "Episode",
-    y = "Number of Characters",
-    colour = "Characters"
+    x = "",
+    y = "tf-idf"
   ) +
+  coord_flip() +
+  facet_wrap(~title,
+             ncol = 2,
+             scales = "free") +
   theme(
-    legend.position = "bottom",
-    legend.key = element_rect(
-      fill = "white",
-      colour = "black"      
+    axis.text.y = element_text(
+      size = 6
+    ),
+    text = element_text(
+      family = "mono"
     ),
     panel.background = element_rect(
-      fill = "white",
-      colour = "black"
+      colour = "black",
+      fill = "white"
     ),
     strip.background = element_rect(
-      colour = "#81b29a",
-      fill = "#f4f1de"
+      colour = frasier_cp[5],
+      fill = frasier_cp[1]
+    ),
+    strip.text = element_text(
+      size = 6
     )
-  ) +
-  facet_wrap(~season, scales = "free_y")
+  )
+
 ```
 
+## And the Dish Ran Away with the Spoon
+
+This is a two part episode (Season 8 Episode 1 and 2) where Daphne and Niles confess their love to Donny and Mel. The associated keywords do well to summarise the episodes: the story centers on Daphne and Donny's wedding and the aftermath of the aforementioned confession (e.g., Donny suing Daphne and Frasier). 
+
+## Dial M for Martin
+
+This is episode 3 of season 6, wherein Martin moves in with Niles to give Frasier space. Words such as *Rebecca*, *model*, and *lingerie* refer to Frasier's date and her occupation. *Stairs* is mentioned a few times: 
+
+- in relation to Martin being physically able to walk up and down the stairs at Nile's place;
+- in reference to Niles pushing Martin down the stairs as a way to keep Daphne from leaving;
+- and, in the end when Martin exclaims that he cannot walk up and down the stairs at Nile's place.
+
+## My Coffee with Niles
+
+This is episode 24 of season 1, which revolves around Frasier and Niles sitting in Cafe Nervosa mulling over his (Frasier's) move to Seattle and whether he is *happy*. The words do well in summarising the plot as throughout the episode Frasier continually returns coffee for various reasons (not decaf, no non-fat milk). *Bumbershoot* is the term Daphne uses to describe an umbrella.
+
+## My Fair Frasier
+
+This is episode 7 of season 5 where Frasier dates an attorney (*Sam Pierce*). Although only 4 keywords are presented, they do give the gist of the episode. In effect, Frasier is concerned that his new relationship, which started over the purchase of a *purse*, puts him in a position where he is not dominant.
+
+## The Ann who Came to Dinner
+
+Finally, we have episode 13 of season 11. As a result of Frasier's fearing being *sued* (due to having no *insurance*), *Ann* moves in with him an Martin. We can also see the words *trumpet*, which is what *Ann* plays, and *bunny*, the nickname *Ann* uses for Frasier.
+
+# Conclusion
+
+Although brief, the analysis has shown how the number of lines per character changed over the 11 seasons. Moreover, the use of tf-idf has been helpful in identifying keywords that can do well in summarising episodes.  

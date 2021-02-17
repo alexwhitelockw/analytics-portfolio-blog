@@ -87,7 +87,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--radix_placeholder_meta_tags-->
 <title>Alex Wainwright: Frasier Analysis</title>
 
-<meta property="description" itemprop="description" content="A short description of the post."/>
+<meta property="description" itemprop="description" content="In this post we undertake a descriptive and text mining analysis of the lines spoken on Frasier."/>
 
 
 <!--  https://schema.org/Article -->
@@ -98,25 +98,25 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
 <meta property="og:title" content="Alex Wainwright: Frasier Analysis"/>
 <meta property="og:type" content="article"/>
-<meta property="og:description" content="A short description of the post."/>
+<meta property="og:description" content="In this post we undertake a descriptive and text mining analysis of the lines spoken on Frasier."/>
 <meta property="og:locale" content="en_US"/>
 <meta property="og:site_name" content="Alex Wainwright"/>
 
 <!--  https://dev.twitter.com/cards/types/summary -->
 <meta property="twitter:card" content="summary"/>
 <meta property="twitter:title" content="Alex Wainwright: Frasier Analysis"/>
-<meta property="twitter:description" content="A short description of the post."/>
+<meta property="twitter:description" content="In this post we undertake a descriptive and text mining analysis of the lines spoken on Frasier."/>
 
 <!--/radix_placeholder_meta_tags-->
   <!--radix_placeholder_rmarkdown_metadata-->
 
 <script type="text/json" id="radix-rmarkdown-metadata">
-{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Frasier Analysis"]},{"type":"character","attributes":{},"value":["A short description of the post."]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","url"]}},"value":[{"type":"character","attributes":{},"value":["Alex Wainwright"]},{"type":"character","attributes":{},"value":["https://example.com/norajones"]}]}]},{"type":"character","attributes":{},"value":["02-06-2021"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["self_contained"]}},"value":[{"type":"logical","attributes":{},"value":[false]}]}]}]}
+{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","categories","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Frasier Analysis"]},{"type":"character","attributes":{},"value":["frasier","text mining"]},{"type":"character","attributes":{},"value":["In this post we undertake a descriptive and text mining analysis of the lines spoken on Frasier."]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","url"]}},"value":[{"type":"character","attributes":{},"value":["Alex Wainwright"]},{"type":"character","attributes":{},"value":["https://example.com/norajones"]}]}]},{"type":"character","attributes":{},"value":["02-06-2021"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["self_contained"]}},"value":[{"type":"logical","attributes":{},"value":[false]}]}]}]}
 </script>
 <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["frasier-analysis_files/anchor-4.2.2/anchor.min.js","frasier-analysis_files/bowser-1.9.3/bowser.min.js","frasier-analysis_files/distill-2.2.21/template.v2.js","frasier-analysis_files/figure-html5/charPlot-1.png","frasier-analysis_files/figure-html5/linePlot-1.png","frasier-analysis_files/figure-html5/unnamed-chunk-2-1.png","frasier-analysis_files/frasier_script_clean.csv","frasier-analysis_files/header-attrs-2.6/header-attrs.js","frasier-analysis_files/jquery-1.11.3/jquery.min.js","frasier-analysis_files/popper-2.6.0/popper.min.js","frasier-analysis_files/tippy-6.2.7/tippy-bundle.umd.min.js","frasier-analysis_files/tippy-6.2.7/tippy-light-border.css","frasier-analysis_files/tippy-6.2.7/tippy.css","frasier-analysis_files/tippy-6.2.7/tippy.umd.min.js","frasier-analysis_files/webcomponents-2.0.0/webcomponents.js"]}
+  {"type":"character","attributes":{},"value":["frasier-analysis_files/anchor-4.2.2/anchor.min.js","frasier-analysis_files/bowser-1.9.3/bowser.min.js","frasier-analysis_files/distill-2.2.21/template.v2.js","frasier-analysis_files/figure-html5/charPlot-1.png","frasier-analysis_files/figure-html5/linePlot-1.png","frasier-analysis_files/figure-html5/linesPlot-1.png","frasier-analysis_files/figure-html5/tfidfPlot-1.png","frasier-analysis_files/figure-html5/unnamed-chunk-1-1.png","frasier-analysis_files/figure-html5/unnamed-chunk-2-1.png","frasier-analysis_files/frasier_script_clean.csv","frasier-analysis_files/header-attrs-2.6/header-attrs.js","frasier-analysis_files/jquery-1.11.3/jquery.min.js","frasier-analysis_files/popper-2.6.0/popper.min.js","frasier-analysis_files/tippy-6.2.7/tippy-bundle.umd.min.js","frasier-analysis_files/tippy-6.2.7/tippy-light-border.css","frasier-analysis_files/tippy-6.2.7/tippy.css","frasier-analysis_files/tippy-6.2.7/tippy.umd.min.js","frasier-analysis_files/webcomponents-2.0.0/webcomponents.js"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
 <meta name="distill:offset" content="../.."/>
@@ -2061,7 +2061,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"Frasier Analysis","description":"A short description of the post.","authors":[{"author":"Alex Wainwright","authorURL":"https://example.com/norajones","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-02-06T00:00:00.000+00:00","citationText":"Wainwright, 2021"}
+{"title":"Frasier Analysis","description":"In this post we undertake a descriptive and text mining analysis of the lines spoken on Frasier.","authors":[{"author":"Alex Wainwright","authorURL":"https://example.com/norajones","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-02-06T00:00:00.000+00:00","citationText":"Wainwright, 2021"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -2086,8 +2086,12 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="d-title">
 <h1>Frasier Analysis</h1>
 <!--radix_placeholder_categories-->
+<div class="dt-tags">
+  <a href="../../index.html#category:frasier" class="dt-tag">frasier</a>
+  <a href="../../index.html#category:text_mining" class="dt-tag">text mining</a>
+</div>
 <!--/radix_placeholder_categories-->
-<p><p>A short description of the post.</p></p>
+<p><p>In this post we undertake a descriptive and text mining analysis of the lines spoken on Frasier.</p></p>
 </div>
 
 <div class="d-byline">
@@ -2097,17 +2101,153 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <div class="d-article">
-<p>Distill is a publication format for scientific and technical writing, native to the web.</p>
-<p>Learn more about using Distill at <a href="https://rstudio.github.io/distill" class="uri">https://rstudio.github.io/distill</a>.</p>
+<h1 id="overview">Overview</h1>
+<p>After re-watching Frasier a few times over the course of the Victoria lockdowns, I decided to undertake a project to extract and analyse text contained in the Frasier scripts. After a weekend spent getting to grips with the BeautifulSoup and Request libraries, I have managed to extract and clean the data (not 100% guaranteed). The original data source can be found <a href="http://www.kacl780.net/frasier/transcripts/">here</a> and can be downloaded <a href="https://github.com/alexwhitelockw/frasier_episode_scripts">here</a>.</p>
 <div class="layout-chunk" data-layout="l-body">
 
 </div>
+<h1 id="character-lines">Character Lines</h1>
+<h2 id="by-season">By Season</h2>
+<p>Let’s first start by exploring some descriptives assoicated with the number of lines each character has across the 11 seasons. Focus of this analysis is solely on the five main characters: <em>Daphne</em>, <em>Frasier</em>, <em>Martin</em>, <em>Niles</em>, and <em>Roz</em>. Table <a href="#tab:linesTable">1</a> and Figure <a href="#fig:linesPlot">1</a> show the average number of lines per character across seasons. We can see that Frasier obviously dominates in the number of lines spoken and, for the most part, varying between 80 to 90 lines per season. However, seasons 9 and 10 show a dip to 70 and 67 lines, respectively. It may have been the case that episodes across these 2 seasons emphasised other characters (e.g., Roz’s new job and Nile’s heart surgery take place in season 10). Nile’s lines peaked in season 6, which is understandable as his story centers on his divorce from Maris.</p>
 <div class="layout-chunk" data-layout="l-body">
-<p><img src="frasier-analysis_files/figure-html5/linePlot-1.png" width="624" /></p>
+<table>
+<caption><span id="tab:linesTable">Table 1: </span>The average (mean) number of lines for each of the five main characters on Frasier across 11 seasons. As expected, Frasier consistently has the highest number of lines of any of the characters, followed by Niles and Martin. Daphne and Roz appear to be comparable, but have far fewer lines over the seasons than Frasier, Martin, or Niles.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Character</th>
+<th style="text-align: right;">1</th>
+<th style="text-align: right;">2</th>
+<th style="text-align: right;">3</th>
+<th style="text-align: right;">4</th>
+<th style="text-align: right;">5</th>
+<th style="text-align: right;">6</th>
+<th style="text-align: right;">7</th>
+<th style="text-align: right;">8</th>
+<th style="text-align: right;">9</th>
+<th style="text-align: right;">10</th>
+<th style="text-align: right;">11</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Daphne</td>
+<td style="text-align: right;">18.75</td>
+<td style="text-align: right;">16.25</td>
+<td style="text-align: right;">17.92</td>
+<td style="text-align: right;">22.21</td>
+<td style="text-align: right;">24.75</td>
+<td style="text-align: right;">18.21</td>
+<td style="text-align: right;">23.54</td>
+<td style="text-align: right;">27.89</td>
+<td style="text-align: right;">24.12</td>
+<td style="text-align: right;">24.12</td>
+<td style="text-align: right;">18.70</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Frasier</td>
+<td style="text-align: right;">91.50</td>
+<td style="text-align: right;">84.21</td>
+<td style="text-align: right;">82.21</td>
+<td style="text-align: right;">81.04</td>
+<td style="text-align: right;">85.33</td>
+<td style="text-align: right;">92.75</td>
+<td style="text-align: right;">83.92</td>
+<td style="text-align: right;">80.33</td>
+<td style="text-align: right;">70.08</td>
+<td style="text-align: right;">66.67</td>
+<td style="text-align: right;">90.54</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Martin</td>
+<td style="text-align: right;">34.04</td>
+<td style="text-align: right;">28.29</td>
+<td style="text-align: right;">29.04</td>
+<td style="text-align: right;">30.38</td>
+<td style="text-align: right;">27.17</td>
+<td style="text-align: right;">33.00</td>
+<td style="text-align: right;">32.25</td>
+<td style="text-align: right;">25.75</td>
+<td style="text-align: right;">31.08</td>
+<td style="text-align: right;">30.29</td>
+<td style="text-align: right;">28.67</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Niles</td>
+<td style="text-align: right;">33.42</td>
+<td style="text-align: right;">35.25</td>
+<td style="text-align: right;">35.92</td>
+<td style="text-align: right;">43.79</td>
+<td style="text-align: right;">42.21</td>
+<td style="text-align: right;">52.46</td>
+<td style="text-align: right;">39.75</td>
+<td style="text-align: right;">44.29</td>
+<td style="text-align: right;">39.62</td>
+<td style="text-align: right;">37.21</td>
+<td style="text-align: right;">40.25</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Roz</td>
+<td style="text-align: right;">13.04</td>
+<td style="text-align: right;">18.25</td>
+<td style="text-align: right;">15.62</td>
+<td style="text-align: right;">16.92</td>
+<td style="text-align: right;">21.62</td>
+<td style="text-align: right;">23.08</td>
+<td style="text-align: right;">21.42</td>
+<td style="text-align: right;">20.33</td>
+<td style="text-align: right;">19.12</td>
+<td style="text-align: right;">23.71</td>
+<td style="text-align: right;">16.73</td>
+</tr>
+</tbody>
+</table>
 </div>
+<p>Martin is quite consistent across the 11 seasons in regards to the average number of lines. The same can generally be said of Daphne and Roz. Interestingly, Roz did see an uptick in lines beyond season 1.</p>
 <div class="layout-chunk" data-layout="l-body">
-<p><img src="frasier-analysis_files/figure-html5/charPlot-1.png" width="624" /></p>
+<div class="figure" style="text-align: center"><span id="fig:linesPlot"></span>
+<img src="frasier-analysis_files/figure-html5/linesPlot-1.png" alt="Average (mean) number of lines spoken by the five main characters in Frasier across 11 seasons." width="624" />
+<p class="caption">
+Figure 1: Average (mean) number of lines spoken by the five main characters in Frasier across 11 seasons.
+</p>
 </div>
+</div>
+<h2 id="by-episode">By Episode</h2>
+<p>Figure <a href="#fig:linePlot">2</a> presents the number of lines by each of the main characters at the level of each episode. From this perspective, we can see far more clearly as to why Frasier seemingly showed, on average, fewer lines during seasons 9 and 10. Additionally, you can see occasions when the number of lines spoken by Niles exceeds those of Frasier. For example, Kelsey Grammer directed Season 3 Episode 13 (<em>Moon Dance</em>), resulting in the character of Frasier making a very limited appearance. Instead, the episode largely focused on the dynamics between Niles and Daphne, hence the greater number of lines for these two characters. We can also see another occasion in Season 6 Episode 16 (<em>Decoys</em>) wherein Niles devises a plan to reunite Roz and her ex-boyfriend Donny.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="figure" style="text-align: center"><span id="fig:linePlot"></span>
+<img src="frasier-analysis_files/figure-html5/linePlot-1.png" alt="Number of lines spoken by the five main characters in Frasier across each episode for the 11 season run." width="624" />
+<p class="caption">
+Figure 2: Number of lines spoken by the five main characters in Frasier across each episode for the 11 season run.
+</p>
+</div>
+</div>
+<h1 id="keywords">Keywords</h1>
+<p>Beyond an examination of the number of lines spoken by each of the main characters, we can also explore the keywords associated with each episode. To do this, we can use the <em>Term Frequency - Inverse Document Frequency</em> measure (<em>tf-idf</em>). This statistic is essentially the frequency of words multiplied by how common those words are across all documents (i.e., words that are found across many documents are downweighted, whilst rare words are assigned a higher weight). Given that there are 264 episodes of Frasier, exploring the keywords each episode would be tedious. Instead, a random sample of 5 episodes (Figure <a href="#fig:tfidfPlot">3</a>) is used and we will explore how well the keywords summarise each episode.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="figure" style="text-align: center"><span id="fig:tfidfPlot"></span>
+<img src="frasier-analysis_files/figure-html5/tfidfPlot-1.png" alt="Top words, based on tf-idf, across a random sample of 5 episodes." width="624" />
+<p class="caption">
+Figure 3: Top words, based on tf-idf, across a random sample of 5 episodes.
+</p>
+</div>
+</div>
+<h2 id="and-the-dish-ran-away-with-the-spoon">And the Dish Ran Away with the Spoon</h2>
+<p>This is a two part episode (Season 8 Episode 1 and 2) where Daphne and Niles confess their love to Donny and Mel. The associated keywords do well to summarise the episodes: the story centers on Daphne and Donny’s wedding and the aftermath of the aforementioned confession (e.g., Donny suing Daphne and Frasier).</p>
+<h2 id="dial-m-for-martin">Dial M for Martin</h2>
+<p>This is episode 3 of season 6, wherein Martin moves in with Niles to give Frasier space. Words such as <em>Rebecca</em>, <em>model</em>, and <em>lingerie</em> refer to Frasier’s date and her occupation. <em>Stairs</em> is mentioned a few times:</p>
+<ul>
+<li>in relation to Martin being physically able to walk up and down the stairs at Nile’s place;</li>
+<li>in reference to Niles pushing Martin down the stairs as a way to keep Daphne from leaving;</li>
+<li>and, in the end when Martin exclaims that he cannot walk up and down the stairs at Nile’s place.</li>
+</ul>
+<h2 id="my-coffee-with-niles">My Coffee with Niles</h2>
+<p>This is episode 24 of season 1, which revolves around Frasier and Niles sitting in Cafe Nervosa mulling over his (Frasier’s) move to Seattle and whether he is <em>happy</em>. The words do well in summarising the plot as throughout the episode Frasier continually returns coffee for various reasons (not decaf, no non-fat milk). <em>Bumbershoot</em> is the term Daphne uses to describe an umbrella.</p>
+<h2 id="my-fair-frasier">My Fair Frasier</h2>
+<p>This is episode 7 of season 5 where Frasier dates an attorney (<em>Sam Pierce</em>). Although only 4 keywords are presented, they do give the gist of the episode. In effect, Frasier is concerned that his new relationship, which started over the purchase of a <em>purse</em>, puts him in a position where he is not dominant.</p>
+<h2 id="the-ann-who-came-to-dinner">The Ann who Came to Dinner</h2>
+<p>Finally, we have episode 13 of season 11. As a result of Frasier’s fearing being <em>sued</em> (due to having no <em>insurance</em>), <em>Ann</em> moves in with him an Martin. We can also see the words <em>trumpet</em>, which is what <em>Ann</em> plays, and <em>bunny</em>, the nickname <em>Ann</em> uses for Frasier.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>Although brief, the analysis has shown how the number of lines per character changed over the 11 seasons. Moreover, the use of tf-idf has been helpful in identifying keywords that can do well in summarising episodes.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->

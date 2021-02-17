@@ -2,7 +2,7 @@
   {
     "path": "posts/2021-02-06-frasier-analysis/",
     "title": "Frasier Analysis",
-    "description": "A short description of the post.",
+    "description": "In this post we undertake a descriptive and text mining analysis of the lines spoken on Frasier.",
     "author": [
       {
         "name": "Alex Wainwright",
@@ -10,27 +10,13 @@
       }
     ],
     "date": "2021-02-06",
-    "categories": [],
-    "contents": "\nDistill is a publication format for scientific and technical writing, native to the web.\nLearn more about using Distill at https://rstudio.github.io/distill.\n\n\n\n\n\n\n\n\n\n\n\n\n",
-    "preview": "posts/2021-02-06-frasier-analysis/frasier-analysis_files/figure-html5/linePlot-1.png",
-    "last_modified": "2021-02-06T20:27:15+11:00",
-    "input_file": {}
-  },
-  {
-    "path": "posts/welcome/",
-    "title": "Alex Wainwright",
-    "description": "Welcome to our new blog, Alex Wainwright. We hope you enjoy \nreading what we have to say!",
-    "author": [
-      {
-        "name": "Alex Wainwright",
-        "url": "https://example.com/norajones"
-      }
+    "categories": [
+      "frasier",
+      "text mining"
     ],
-    "date": "2021-02-06",
-    "categories": [],
-    "contents": "\n\n\n\n",
-    "preview": {},
-    "last_modified": "2021-02-06T18:36:34+11:00",
+    "contents": "\nOverview\nAfter re-watching Frasier a few times over the course of the Victoria lockdowns, I decided to undertake a project to extract and analyse text contained in the Frasier scripts. After a weekend spent getting to grips with the BeautifulSoup and Request libraries, I have managed to extract and clean the data (not 100% guaranteed). The original data source can be found here and can be downloaded here.\n\n\n\nCharacter Lines\nBy Season\nLet’s first start by exploring some descriptives assoicated with the number of lines each character has across the 11 seasons. Focus of this analysis is solely on the five main characters: Daphne, Frasier, Martin, Niles, and Roz. Table 1 and Figure 1 show the average number of lines per character across seasons. We can see that Frasier obviously dominates in the number of lines spoken and, for the most part, varying between 80 to 90 lines per season. However, seasons 9 and 10 show a dip to 70 and 67 lines, respectively. It may have been the case that episodes across these 2 seasons emphasised other characters (e.g., Roz’s new job and Nile’s heart surgery take place in season 10). Nile’s lines peaked in season 6, which is understandable as his story centers on his divorce from Maris.\n\nTable 1: The average (mean) number of lines for each of the five main characters on Frasier across 11 seasons. As expected, Frasier consistently has the highest number of lines of any of the characters, followed by Niles and Martin. Daphne and Roz appear to be comparable, but have far fewer lines over the seasons than Frasier, Martin, or Niles.\nCharacter\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\nDaphne\n18.75\n16.25\n17.92\n22.21\n24.75\n18.21\n23.54\n27.89\n24.12\n24.12\n18.70\nFrasier\n91.50\n84.21\n82.21\n81.04\n85.33\n92.75\n83.92\n80.33\n70.08\n66.67\n90.54\nMartin\n34.04\n28.29\n29.04\n30.38\n27.17\n33.00\n32.25\n25.75\n31.08\n30.29\n28.67\nNiles\n33.42\n35.25\n35.92\n43.79\n42.21\n52.46\n39.75\n44.29\n39.62\n37.21\n40.25\nRoz\n13.04\n18.25\n15.62\n16.92\n21.62\n23.08\n21.42\n20.33\n19.12\n23.71\n16.73\n\nMartin is quite consistent across the 11 seasons in regards to the average number of lines. The same can generally be said of Daphne and Roz. Interestingly, Roz did see an uptick in lines beyond season 1.\n\n\n\nFigure 1: Average (mean) number of lines spoken by the five main characters in Frasier across 11 seasons.\n\n\n\nBy Episode\nFigure 2 presents the number of lines by each of the main characters at the level of each episode. From this perspective, we can see far more clearly as to why Frasier seemingly showed, on average, fewer lines during seasons 9 and 10. Additionally, you can see occasions when the number of lines spoken by Niles exceeds those of Frasier. For example, Kelsey Grammer directed Season 3 Episode 13 (Moon Dance), resulting in the character of Frasier making a very limited appearance. Instead, the episode largely focused on the dynamics between Niles and Daphne, hence the greater number of lines for these two characters. We can also see another occasion in Season 6 Episode 16 (Decoys) wherein Niles devises a plan to reunite Roz and her ex-boyfriend Donny.\n\n\n\nFigure 2: Number of lines spoken by the five main characters in Frasier across each episode for the 11 season run.\n\n\n\nKeywords\nBeyond an examination of the number of lines spoken by each of the main characters, we can also explore the keywords associated with each episode. To do this, we can use the Term Frequency - Inverse Document Frequency measure (tf-idf). This statistic is essentially the frequency of words multiplied by how common those words are across all documents (i.e., words that are found across many documents are downweighted, whilst rare words are assigned a higher weight). Given that there are 264 episodes of Frasier, exploring the keywords each episode would be tedious. Instead, a random sample of 5 episodes (Figure 3) is used and we will explore how well the keywords summarise each episode.\n\n\n\nFigure 3: Top words, based on tf-idf, across a random sample of 5 episodes.\n\n\n\nAnd the Dish Ran Away with the Spoon\nThis is a two part episode (Season 8 Episode 1 and 2) where Daphne and Niles confess their love to Donny and Mel. The associated keywords do well to summarise the episodes: the story centers on Daphne and Donny’s wedding and the aftermath of the aforementioned confession (e.g., Donny suing Daphne and Frasier).\nDial M for Martin\nThis is episode 3 of season 6, wherein Martin moves in with Niles to give Frasier space. Words such as Rebecca, model, and lingerie refer to Frasier’s date and her occupation. Stairs is mentioned a few times:\nin relation to Martin being physically able to walk up and down the stairs at Nile’s place;\nin reference to Niles pushing Martin down the stairs as a way to keep Daphne from leaving;\nand, in the end when Martin exclaims that he cannot walk up and down the stairs at Nile’s place.\nMy Coffee with Niles\nThis is episode 24 of season 1, which revolves around Frasier and Niles sitting in Cafe Nervosa mulling over his (Frasier’s) move to Seattle and whether he is happy. The words do well in summarising the plot as throughout the episode Frasier continually returns coffee for various reasons (not decaf, no non-fat milk). Bumbershoot is the term Daphne uses to describe an umbrella.\nMy Fair Frasier\nThis is episode 7 of season 5 where Frasier dates an attorney (Sam Pierce). Although only 4 keywords are presented, they do give the gist of the episode. In effect, Frasier is concerned that his new relationship, which started over the purchase of a purse, puts him in a position where he is not dominant.\nThe Ann who Came to Dinner\nFinally, we have episode 13 of season 11. As a result of Frasier’s fearing being sued (due to having no insurance), Ann moves in with him an Martin. We can also see the words trumpet, which is what Ann plays, and bunny, the nickname Ann uses for Frasier.\nConclusion\nAlthough brief, the analysis has shown how the number of lines per character changed over the 11 seasons. Moreover, the use of tf-idf has been helpful in identifying keywords that can do well in summarising episodes.\n\n\n\n",
+    "preview": "posts/2021-02-06-frasier-analysis/frasier-analysis_files/figure-html5/linesPlot-1.png",
+    "last_modified": "2021-02-17T21:22:53+11:00",
     "input_file": {}
   }
 ]
