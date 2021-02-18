@@ -1,7 +1,7 @@
 ---
-title: "Melbourne Covid Megathread (Repost)"
+title: "Melbourne Covid Megathread"
 description: |
-  A short description of the post.
+  This post details the analysis of posts made on the Melbourne Reddit covid megathread over the period of 7 months.
 author:
   - name: Alex Wainwright
     url: https://example.com/norajones
