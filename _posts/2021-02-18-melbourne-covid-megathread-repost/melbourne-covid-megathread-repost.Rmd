@@ -1,0 +1,295 @@
+---
+title: "Melbourne Covid Megathread (Repost)"
+description: |
+  A short description of the post.
+author:
+  - name: Alex Wainwright
+    url: https://example.com/norajones
+date: 02-18-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+# Overview
+
+To keep myself sane during lockdown, I decided to analyse public opinion towards the Victorian lockdowns, specifically those opinions vocalised on Reddit. Below you'll find various pieces of analysis of megathread posts covering the period from '2020-03-03' to '2020-09-13'.
+
+## Posting Behaviour
+
+```{r, message=FALSE, echo=FALSE}
+library(data.table)
+library(ggplot2)
+library(ggridges)
+library(knitr)
+library(reticulate)
+
+megathread_post_count <-
+  fread("melbourne-covid-megathread-repost_files/reddit_covid_post_count.csv")
+
+megathread_post_count[, `Created Date` := as.Date(`Created Date`)]
+
+megathread_post_count[, created_month := month(`Created Date`)]
+
+megathread_post_count[, roll_14_day := frollmean(N, 14)]
+
+monthly_posts <-
+  megathread_post_count[created_month %in% c(3,9), .(`n_posts` = sum(N)), by = 'created_month']
+
+```
+
+Figure \@ref(fig:postplot) shows the daily count of posts during the time frame (2020-03-03 to 2020-09-13), along with the 14 day average (in red). Key events in the Covid-19 timeline for Victoria have been marked with the view of providing some context to the posting behaviour, specifically those events during the *second wave*. The main takeaway from the Figure \@ref(fig:postplot) is how the number of posts has followed the waves, with relatively low post numbers between March and April, and a uptake in posting that began to steadily rise towards the end of June.
+
+```{r postplot, warning=F, message=F, echo=F, fig.align="center", fig.cap="Daily number of posts in the Covid-19 megathread over the period of 2020-03-03 to 2020-09-13. The white line shows the raw daily count of posts, whilst the red line is the 14 day average. It can be seen that posting on the megathread was particularly low during the first wave, yet surged during Victoria's second wave. Key dates during the second wave have been highlighted to provide context for posting behaviour."}
+ggplot(data = megathread_post_count,
+       aes(x = `Created Date`, y = N)) +
+  geom_segment(
+    x = as.Date('2020-06-20'),
+    xend = as.Date('2020-07-07'),
+    y = 4304,
+    yend = 4304,
+    colour = 'white',
+    size = .5,
+    lineend = 'round',
+    linetype = 1,
+    arrow = arrow(length = unit(.15, "cm"))
+  ) +
+  geom_text(
+    aes(
+      x = as.Date('2020-06-20'),
+      y = 4304,
+      label = 'Stage 3 Lockdown'
+    ),
+    colour = 'white',
+    size = 3,
+    nudge_x = -17
+  ) +
+  geom_segment(
+    x = as.Date('2020-07-20'),
+    xend = as.Date('2020-08-02'),
+    y = 7295,
+    yend = 7295,
+    colour = 'white',
+    size = .5,
+    lineend = 'round',
+    linetype = 1,
+    arrow = arrow(length = unit(.15, "cm"))
+  ) +
+  geom_text(
+    aes(
+      x = as.Date('2020-07-20'),
+      y = 7295,
+      label = 'Stage 4 Lockdown'
+    ),
+    colour = 'white',
+    size = 3,
+    nudge_x = -17
+  ) +
+  geom_segment(
+    x = as.Date('2020-08-20'),
+    xend = as.Date('2020-09-06'),
+    y = 8277,
+    yend = 8277,
+    colour = 'white',
+    size = .5,
+    lineend = 'round',
+    linetype = 1,
+    arrow = arrow(length = unit(.15, "cm"))
+  )+
+  geom_text(
+    aes(
+      x = as.Date('2020-08-20'),
+      y = 8277,
+      label = 'Road Map'
+    ),
+    colour = 'white',
+    size = 3,
+    nudge_x = -10
+  ) +
+  geom_line(aes(colour = 'post_count'),
+            colour = 'white',
+            group = 1,
+            linetype = 1) +
+  geom_line(aes(x = `Created Date`, y = roll_14_day, group = 1, colour = 'avg_14'),
+            linetype = 2) +
+  labs(title = 'Melbourne Reddit Covid-19 Megathread Posts over 7 Months and in\n relation to Lockdown Responses',
+       x = '',
+       y = 'Number of Posts',
+       colour = '') +
+  theme(
+    plot.background = element_rect(fill = 'black',
+                                   colour = 'black'),
+    panel.background = element_rect(fill = 'black',
+                                    colour = 'black'),
+    panel.grid = element_blank(),
+    axis.line = element_line(colour = 'white'),
+    axis.text = element_text(colour = 'white'),
+    text = element_text(colour = 'white'),
+    legend.position = 'none'
+  ) +
+  scale_x_date(date_breaks = 'month', date_labels = '%b') +
+  scale_color_manual(
+    values = c(
+      'post_count' = 'white',
+      'avg_14' = '#CC0000')
+    )
+
+
+```
+
+### Posting During the First Wave
+
+Cases of Coronavirus began to rise in Victoria during March, resulting in Daniel Andrews (Premier of Victoria) declaring a State of Emergency on the 16^th^ of that month. This also corresponded to the time when panic buying was all the rage, and daily excursions to locate toilet paper were not uncommon. In the realm of the Melbourne sub-Reddit, posts associated with Covid-19 were also on the rise (Median # of posts per day in March = `r megathread_post_count[created_month == 3, .(median(N))]`; median absolute deviation = `r round(megathread_post_count[created_month == 3, .(mad(N))], 2)`). The median absolute deviation shows that, on average, the number of day-to-day postings during March were `r round(megathread_post_count[created_month == 3, .(mad(N))], 2)` posts away from the median.
+
+There is quite a lot of spread in the number of posts made during the month of March, with some days being particularly low (e.g., 75 posts on 2020-03-05), whilst some were relatively high (e.g., 1136 posts on 2020-03-17). Interestingly, these 1136 posts fell on the day after the state of emergency was declared. Table \@ref(tab:marchpost) presents a random sample of 5 posts from 2020-03-17. The topic of 'panic buying' is quite clear from this sample of messages, with some posters referencing supermarkets running out of toilet paper, whilst others appear to have prepped for this situation.
+
+```{r, echo=F}
+set.seed(06102020)
+
+march_posts <-
+  fread("melbourne-covid-megathread-repost_files/reddit_covid_vader_output.csv")
+
+sample_march <-
+  dplyr::sample_n(march_posts[`Created Date` == '2020-03-17', .(`Created Date`, Text)], 5)
+
+sample_march[, Text := stringr::str_squish(Text)]
+```
+
+```{r marchpost, echo=F}
+kable(sample_march, col.names = c('Created Date', 'Post Text'), caption = "A random sample of 5 posts taken from 2020-03-17, corresponding to the date following the State of Emergency being declared in Victoria. General themes in these posts include the lack of toilet paper in supermarkets, prepping for the supposed apocalypse, and following social distancing guidelines.")
+
+```
+
+### Posting During the Second Wave
+
+Despite lockdown relaxations around the beginning of June, these were short-lived. By the 20^th^ June various restrictions came into force, with postcode lockdowns being enforced on the 30^th^ June. During the month of June we can see a stark contrast in posting behaviour. If we take the period from the 2020-06-01 to 2020-06-19 (inclusive), the median number of posts were `r median(megathread_post_count$N[megathread_post_count$"Created Date" >= '2020-06-01' & megathread_post_count$"Created Date" <= '2020-06-19'])` (median absolute deviation = `r mad(megathread_post_count$N[megathread_post_count$"Created Date" >= '2020-06-01' & megathread_post_count$"Created Date" <= '2020-06-19'])`). Compare this to period between 2020-06-20 to 2020-06-30, wherein the median number of posts rose to `r median(megathread_post_count$N[megathread_post_count$"Created Date" >= '2020-06-20' & megathread_post_count$"Created Date" <= '2020-06-30'])` (median absolute deviation = `r mad(megathread_post_count$N[megathread_post_count$"Created Date" >= '2020-06-20' & megathread_post_count$"Created Date" <= '2020-06-30'])`), representing a `r round(median(megathread_post_count$N[megathread_post_count$"Created Date" >= '2020-06-20' & megathread_post_count$"Created Date" <= '2020-06-30']) / median(megathread_post_count$N[megathread_post_count$"Created Date" >= '2020-06-01' & megathread_post_count$"Created Date" <= '2020-06-19']))`-fold increase in the average day-to-day posting.
+
+Returning to Figure \@ref(fig:postplot), there are three discernible peaks in posting behaviour over the period of July to September. These peaks align with various lockdown announcements. On 2020-07-07, when Stage 3 *Stay at Home* restrictions were announced, there were `r megathread_post_count$N[megathread_post_count$"Created Date" == '2020-07-07']` posts made. 2020-08-02 was when the *State of Disaster* was declared and the move to Stage 4 restrictions; the number of posts made on this day was `r megathread_post_count$N[megathread_post_count$"Created Date" == '2020-08-02']`. Finally, on 2020-09-06 the *Roadmap* was unveiled, resulting in another uptick in postings (`r megathread_post_count$N[megathread_post_count$"Created Date" == '2020-09-06']`).
+
+Table \@ref(tab:secondWavePosts) contains a random sample of 15 sentences from the aforementioned dates (i.e., '2020-07-07', '2020-08-02', and '2020-09-06'). The sentences were first obtained by concatenating the posts for each date and applying the Gensim *[summarizer](https://radimrehurek.com/gensim/summarization/summariser.html)* function to summarise the messages. For the '2020-07-07', messages seem to refer to questions around leaving metro Melbourne for regional areas and the concern around spending 6 weeks in lockdown. Messages on '2020-08-02' seem to be centred on seeking clarification for the various *Stage 4* restrictions and vocalising their feelings of apathy towards a pro-longed lockdown. One message in the sample is associated with '2020-09-06' and succinctly summarises how we should not get into the habit of focusing on daily case announcements.
+
+```{python, echo=F, message=F, warning=F, chache=T}
+from gensim.summarization.summarizer import summarize
+import pandas as pd
+
+megathread_posts = pd.read_csv("melbourne-covid-megathread-repost_files/reddit_covid_vader_output.csv")
+
+reaction_posts = megathread_posts.loc[megathread_posts['Created Date'].isin(['2020-07-07', '2020-08-02', '2020-09-06']),
+                                      ['Text', 'Created Date']]
+                                      
+summarised_reaction_posts = (reaction_posts.groupby('Created Date')['Text'].
+                                            apply(lambda x: ' '.join(x)).
+                                            reset_index())
+
+summarised_reaction_posts['summarised_posts'] = (summarised_reaction_posts['Text'].
+                                                              apply(lambda x: summarize(x, split=True)))
+                                                              
+summarised_reaction_posts = summarised_reaction_posts.explode('summarised_posts')
+
+summarised_reaction_posts.drop(columns='Text', inplace=True)
+
+```
+
+```{r secondWavePosts, echo=F, message=F, warning=F}
+set.seed(11102020)
+summarised_posts <-
+  py$summarised_reaction_posts
+
+knitr::kable(dplyr::sample_n(summarised_posts, 15),col.names = c('Created Date', 'Post'),
+             caption = "Sample of 15 sentences across the dates of '2020-07-07', '2020-08-02', and '2020-09-06'. These sentences were obtained by applying the gensim summarizer function to a concatenated list of posts for each of the aforementioned dates. In this way, there is a likelihood that two or more sentences could originate from a single post.")
+```
+
+## Sentiment Analysis
+
+Figure \@ref(fig:vaderPlot) presents the day-to-day distribution of the Vader compound scores, facetted by month. The use of Vader to measure sentiment is applicable in this context as it is suited to social media data. The compound score corresponds to a normalisation of the summed valence scores across words within the message. As can be seen in Figure \@ref(fig:vaderPlot), compound scores appeared to be quite variable in the months of April, May, and June. Given that the number of posts during these months were relatively low, these distributions are not unexpected. During those months wherein posting behaviour was higher (March, July, August, and September), we can see that the day-to-day compound score had a peak at 0. It may be the case that posts were generally neutral, outweighing those that were overly positive or negative in sentiment. We also have to consider the confounding factor that messages will have been moderated to an extent; therefore, we may not be seeing a complete representation of postings.
+
+```{r vaderPlot, echo=F, message=F, warning=F, fig.align="center", fig.cap="Day-to-day distribution of Vader Compound Scores for each post across each month. Plots show that there was a high variability in compound scores during April, May, and June, which is a likely a result of there being a smaller number of posts during these months. Months such as July and August show the distributions to peak at 0, a likely result of there being a far greater number of posts during this time."}
+megathread_vader <-
+  fread("melbourne-covid-megathread-repost_files/reddit_covid_vader_output.csv")
+
+megathread_vader[, created_month := lubridate::month(`Created Date`, label = T)]
+
+ggplot(data = megathread_vader, aes(x = compound, y = `Created Date`, group = `Created Date`)) +
+  geom_density_ridges(
+    colour = 'white',
+    fill = 'black',
+    scale = 10) +
+  labs(
+    x = 'Vader Compound Score',
+    y = ''
+  ) +
+  theme(
+    panel.background = element_rect(
+      fill = 'black',
+      colour = 'black'
+    ),
+    panel.grid = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    strip.background = element_blank(),
+    plot.background = element_rect(
+      fill = 'black',
+      colour = 'black'
+    ),
+    text = element_text(
+      colour = 'white'
+    ),
+    axis.text = element_text(
+      colour = 'white'
+    ),
+    strip.text = element_text(
+      colour = 'white'
+    )
+  ) +
+  facet_wrap(~created_month,
+             scales = 'free_y')
+
+```
+
+## Summary
+
+Although not representative of the larger population, posting behaviour within the megathread has offered some interesting insights. For one, it can be seen that posting has seemingly followed the number of reported infections. As this data only reflects up to '2020-09-13' this conclusion is, however, limited. In conjunction with the information of the message content, we can also see how topics within the posts have shifted over the course of these 7 months.
+
+To end this post, I present Figure \@ref(fig:compoundWc) that presents keywords (using the Gensim *[keywords](https://radimrehurek.com/gensim/summarization/keywords.html)* function) from those messages with a Vader compound score exceeding .4 (i.e., they have a positive sentiment). 
+
+```{python compoundWc, chache=T, message=F, warning=F, echo=F, fig.align="center", fig.width = 10, fig.cap="Wordcloud of those keywords in messages with Vader compound scores exceeding the value of .4"}
+from gensim.summarization import keywords
+import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image
+from wordcloud import WordCloud
+
+reddit_vader = pd.read_csv("melbourne-covid-megathread-repost_files/reddit_covid_vader_output.csv")
+
+reddit_vader['keywords'] = reddit_vader['Text'].apply(lambda x: keywords(x, split=True))
+
+redd_vader_long = reddit_vader.explode('keywords')
+
+reddit_pos_posts = redd_vader_long.loc[(redd_vader_long['compound'] > .4) & (redd_vader_long['keywords'].str.contains('NaN') == False)]
+
+melb_logo =  np.array(Image.open('melbourne-covid-megathread-repost_files/mask_image_reddit_analysis.png'))
+
+wc = WordCloud(mask=melb_logo,
+               background_color='white',
+               contour_width=3,
+               contour_color='black',
+               colormap='cividis')
+               
+wc.generate(' '.join(reddit_pos_posts['keywords']))
+
+plt.imshow(wc, interpolation='bilinear')
+plt.axis("off")
+plt.show()
+```
+
+
+
+
+
+
