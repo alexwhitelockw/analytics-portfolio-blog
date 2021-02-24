@@ -1,10 +1,13 @@
 ---
 title: "Melbourne Covid Megathread"
+categories:
+  - reddit
+  - text mining
 description: |
   This post details the analysis of posts made on the Melbourne Reddit covid megathread over the period of 7 months.
 author:
   - name: Alex Wainwright
-    url: https://example.com/norajones
+    url: https://github.com/alexwhitelockw
 date: 02-18-2021
 output:
   distill::distill_article:

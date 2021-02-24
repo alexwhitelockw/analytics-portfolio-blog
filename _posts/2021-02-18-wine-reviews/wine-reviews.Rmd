@@ -1,0 +1,454 @@
+---
+title: "Wine Reviews"
+categories:
+  - wine
+  - text mining
+description: |
+  In this post I undertake a text-mining analysis of wine reviews obtained from Kaggle. I show that using both tf-idf and topic-modelling provides interesting insights into the words used to describe wines of different countries.
+author:
+  - name: Alex Wainwright
+    url: https://github.com/alexwhitelockw
+date: 02-23-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(data.table)
+library(future)
+library(ggplot2)
+library(reticulate)
+library(rlang)
+library(stm)
+library(wesanderson)
+
+plan(multiprocess)
+
+wine_reviews <-
+  fread("wine-reviews_files/winemag-data_first150k.csv")
+
+wine_reviews <-
+  unique(wine_reviews[,c(2,3,6,7,10)])
+
+wine_reviews <-
+  wine_reviews[!is.na(price) & country != ""]
+
+```
+
+```{python cleanText}
+from gensim.parsing import strip_punctuation, strip_numeric, strip_non_alphanum, strip_short, remove_stopwords
+import pandas as pd
+
+def clean_text(text):
+  txt_strp_punc = strip_punctuation(text)
+  txt_strp_num = strip_numeric(txt_strp_punc)
+  txt_strp_non_alpha = strip_non_alphanum(txt_strp_num)
+  txt_strp_short = strip_short(txt_strp_non_alpha, 3)
+  txt_rm_stp_wrds = remove_stopwords(txt_strp_short)
+  return txt_rm_stp_wrds
+
+wine_reviews = r.wine_reviews
+
+wine_reviews["description"] = wine_reviews["description"].str.lower()
+
+wine_reviews["clean_text"] = wine_reviews["description"].apply(clean_text)
+
+```
+
+```{r tfidfPlotFunction}
+
+tfidf_plot <- function(df, facet_var) {
+  
+  ggplot(df, aes(x = reorder(word, tf_idf), y = tf_idf)) +
+  geom_col(
+    fill = wes_palette("GrandBudapest1")[3]
+  ) +
+  coord_flip() +
+  labs(
+    y = "tf-idf",
+    x = ""
+  ) +
+  theme(
+    panel.background = element_rect(
+      colour = "black",
+      fill = "white"
+    ),
+    strip.background = element_rect(
+      colour = "black",
+      fill = wes_palette("GrandBudapest1")[1]
+    )
+  ) +
+  facet_wrap(facet_var,
+             scales = "free")
+}
+
+
+
+```
+
+# Overview
+
+The following analysis uses the wine review data from [Kaggle](https://www.kaggle.com/zynicide/wine-reviews). It (the data) contains 14 columns, but we are only going to be concerned with three: *country*, the country from which the wine originated; *description*, the review of the wine; and *variety*, the grape type. With the removal of duplicates and rows containing missing values, the data contains `r nrow(wine_reviews)` rows.
+
+For this post, the following steps will be taken in the analysis:
+
+- An exploration of keywords across a select number of countries;
+- An exploration of keywords across a select number of varieties;
+- and, a topic modelling of reviews for wines originating from *France*, *Italy*, and *Spain*.
+
+# Keyword Exploration
+
+Keywords will be identified using *tf-idf*, which involves weighting the frequency of a term within a document by the frequency of a word across documents. In other words, if a word is not found across many documents it can be thought of as important to the document in question.
+
+Below, we explore *tf-idf* in relation to the variables of *country* and *variety* of wines. For each variable, we are only taking a subset of the data, especially when we have `r length(unique(wine_reviews$country))` and 
+`r length(unique(wine_reviews$variety))` unique countries and varieties, respectively.
+
+## Country Words
+
+Figure \@ref(fig:countryTfidf) presents the keywords associated with the wine of 11 different countries. For most cases, the top word is the main variety of wine for the country (e.g., [Malbec is the leading grape in Argentina](https://www.winemag.com/region/argentina/)). Beyond the grape names, we can see that the remaining words are descriptors of the wine itself. Taking *France* as an example, we can see that the wine is described by the words *fruits*, *wood*, and *character*.
+
+```{r countryTfidf, fig.cap="Top keywords associated with the wines of 11 different countries based on tf-idf values. In majority of cases, the first word in each sub-plot is the wine variety for that country. Beyond this, it can be seen that different words are used to describe the wines of the country. For example, Picpoul is associated with the words apply, brisk, and kumquat.", layout="l-page", fig.align="center", fig.height=6, fig.width=12}
+
+wine_reviews <-
+  py$wine_reviews
+
+wine_review_tokens <-
+  tidytext::unnest_tokens(
+    wine_reviews, 
+    output = word, 
+    input = clean_text)
+
+wine_review_tokens <-
+  as.data.table(wine_review_tokens)
+
+cntry_tkn_cnt <-
+  wine_review_tokens[, .(word_count = .N), by = c("country", "word")]
+
+cntry_tfidf <-
+  tidytext::bind_tf_idf(cntry_tkn_cnt, 
+                        word, country, word_count)
+
+setorder(cntry_tfidf, country, -tf_idf)
+
+top_10_tfidf_cntry <-
+  cntry_tfidf[country %in% c("US", "Italy", "France", "Spain",
+                                   "Chile", "Argentina", "Australia",
+                                   "Portugal", "New Zealand",
+                                   "Austria", "Germany", "South Africe"),
+              head(.SD, 10), by = "country"]
+
+tfidf_plot(top_10_tfidf_cntry,
+           facet_var = "country")
+
+
+
+```
+
+## Variety Words
+
+Figure \@ref(fig:varietyTfidf) presents the keywords associated with 13 grape varieties. Here again, we can see the top words are generally the varieties themselves, but the words that follow are, on the whole, adjectives used to describe the wine. *Pinot Noir*, for instance, is described using the words *cherry*, *cola*, and *raspberries*. 
+
+```{r varietyTfidf, fig.cap="Top keywords associated with the wines of 13 different varieties based on tf-idf values. In majority of cases, the first word in each sub-plot is the wine variety for that country. The words following are descriptors of the wine itself. For example, Rosé is described with the words cherry, strawberry, and raspberry.", layout="l-page", fig.align="center", fig.height=8, fig.width=12}
+vrty_tkn_cnt <-
+  wine_review_tokens[, .(word_count = .N), by = c("variety", "word")]
+
+vrty_tfidf <-
+  tidytext::bind_tf_idf(vrty_tkn_cnt, 
+                        word, variety, word_count)
+
+setorder(vrty_tfidf, variety, -tf_idf)
+
+top_10_tfidf_vrty <-
+  vrty_tfidf[variety %in% c("Albariño", "Cabernet Sauvignon", "Chenin Blanc",
+                                             "Fiano", "Gewürztraminer", "Grüner Veltliner", "Malbec",
+                                             "Merlot", "Picpoul", "Pinot Grigio", "Pinot Noir", "Riesling", "Rosé"),
+             head(.SD, 10), by = "variety"]
+
+tfidf_plot(top_10_tfidf_vrty,
+           facet_var = "variety")
+
+```
+
+
+# Topic Modelling
+
+Prior to analysing the data with topic modelling, we will reduce the data to a subset of countries, specifically: *France*, *Italy*, and *Spain*. These three countries were selected due to being the [largest producers of wine in the world (in 2014)](https://en.wikipedia.org/wiki/List_of_wine-producing_regions). Table \@ref(tab:filterEuCountries) presents the number of reviews associated with each of the countries selected for the topic model analysis. Whereas, Table \@ref(tab:filterVarieties) presents the count of varieties within the aforementioned three countries, specifically with a review count value exceeding 1000.
+
+## EU County Counts
+
+```{r filterEuCountries, fig.align="center"}
+
+wine_reviews <-
+  as.data.table(wine_reviews)
+
+eu_wine_reviews <-
+  wine_reviews[country %in% c("France", "Italy", "Spain")]
+
+knitr::kable(
+  eu_wine_reviews[, .(cntry_count = .N), by = "country"],
+  col.names = c("Country", "N"),
+  caption = "Number of reviews for each of the countries selected for the topic model analysis. It can be seen that Italian wines have a higher number of reviews, whilst Spanish wines have the fewest."
+)
+
+```
+
+## Variety Counts
+
+```{r filterVarieties, fig.align="center"}
+variety_counts <-
+  eu_wine_reviews[, .(variety_count = .N), by = "variety"]
+
+knitr::kable(
+  variety_counts[variety_count > 1000],
+  col.names = c("Variety", "N"),
+  caption = "Number of reviews exceeding 1000 for each of the wine varieties within the three countries (France, Italy, and Spain) chosen for the topic model analysis. It can be seen that Red Blend wines have a higher number of reviews followed by Chardonnay.")
+```
+
+## Topic Extraction
+
+The structural topic modelling package is used to analyse the reviews across the three countries (*France*, *Italy*, and *Spain*). In regards to model specification, we specify that the prevalence of a topic varies across country. Therefore, K-1 dummy variables are created with the baseline category being Italy (most frequent category). In addition to this, stemming was applied to the review data and the word 'wine' was dropped.
+
+```{r prepDocuments}
+
+eu_wine_reviews <-
+  fastDummies::dummy_columns(eu_wine_reviews,
+                             select_columns = "country", 
+                             remove_most_frequent_dummy = T)
+
+eu_wine_reviews <-
+  as.data.frame(eu_wine_reviews)
+
+wine_reviews_processed <-
+  textProcessor(
+    documents = eu_wine_reviews$clean_text,
+    metadata = eu_wine_reviews[,7:8],
+    customstopwords = c("wine"), 
+    verbose = F)
+
+
+wine_reviews_prep <-
+  prepDocuments(
+    documents = wine_reviews_processed$documents,
+    vocab = wine_reviews_processed$vocab,
+    meta = wine_reviews_processed$meta, 
+    verbose = F
+  )
+
+```
+
+As there was information on the number of topics to extract, we follow a data-driven approach to identifying a suitable number of topics. Below we use the furrr package to run 10 topic models and extract the *Exclusivity* and *Semantic Coherence* values from each run. *Exclusivity* is a measure of how exclusive a word is to a topic; whereas, *Semantic Coherence* provides a measure of topic coherence (i.e., do the words forming a topic make sense semantically?). As shown in Figure \@ref(fig:modelChecks) we can see these values (*Exclusivity* and *Semantic Coherence*) plotted against one another for models with 8, 10, 14, and 18 topics. If we look at the model with 18 topics, it can be seen that exclusivity is maximised yet semantic coherence becomes a lot lower for certain topics. An 8 topic solution, on the other hand, does show the exclusivity values to be quite spread out, whilst semantic coherence does not appear as problematic. A 10 topic model, does appear as a good balance between exclusivity and semantic coherence, and for this reason it was selected as the candidate model.
+
+```{r modelChecks, echo=T, cache=T, layout="l-page", fig.align="center", fig.cap="Ten LDA models were ran in increments of 2, starting from a 2 topic model up to a 20 topic model. For each model, the semantic coherence and exclusivity of the topics were extracted. A good balance between exclusitivty and semantic coherence seems to be found with a 10 topic model.", fig.height=6, fig.width=12}
+
+k <- seq(2, 20, 2)
+
+tm_model_check <-
+  furrr::future_map(k, function(topic) {
+    tm_mod <-
+      stm(
+        documents = wine_reviews_prep$documents,
+        vocab = wine_reviews_prep$vocab,
+        K = topic, 
+        prevalence = ~ country_France + country_Spain,
+        data = wine_reviews_prep$meta,
+        verbose = F
+      )
+    exclus <- exclusivity(tm_mod)
+    sem_coh <- semanticCoherence(tm_mod, wine_reviews_prep$documents)
+    mod_opt <- list(topic=topic, exclusivity=exclus, semantic_coherence=sem_coh)
+    return(mod_opt)
+  })
+
+tm_model_check <-
+  rbindlist(tm_model_check)
+
+ggplot(tm_model_check[topic %in% c(8,10,14,18)], aes(x = exclusivity, y = semantic_coherence,
+                           colour = as.factor(topic),
+                           shape = as.factor(topic))) +
+  geom_point(
+    size = 2.5
+  ) +
+  labs(
+    x = "Exclusivity",
+    y = "Semantic Coherence",
+    colour = "Topic",
+    shape = "Topic"
+  ) +
+  scale_colour_manual(values =  wes_palette("Darjeeling1")) +
+  theme(
+    legend.position = "bottom",
+    legend.key = element_rect(
+      colour = "black",
+      fill = "white"
+    ),
+    panel.background = element_rect(
+      colour = "black",
+      fill = "white"
+    )
+  )
+
+```
+
+## Model Run
+
+Figure \@ref(fig:tmModelRun) presents the expected topic proportions (based on the document-topic matrix) along with the top five words associated with each topic (based on the word-topic matrix). To flesh out these topics, we will present two relevant quotes for each of the top 4 topics (1, 4, 7, and 9).
+
+```{r tmModelRun, cache=T, message=F, layout="l-page", fig.align="center", fig.cap="Expected topic proportions across  wine reviews along with the top 5 words per topic. Topics 1 and 4 appear to be found across a far greater number of wine reviews and appear to refer to the ageing and acidity of wines, respectively. Topic 3, on the other hand, appears to be far less frequent across wine reviews.", fig.height=6, fig.width=12}
+wine_tm_mod <-
+  stm(
+    documents = wine_reviews_prep$documents,
+    vocab = wine_reviews_prep$vocab,
+    K = 10, 
+    prevalence = ~ country_France + country_Spain,
+    data = wine_reviews_prep$meta, 
+    verbose = F
+    )
+
+# Beta Matrix (Word-Topic)
+
+tm_beta <- 
+  as.data.table(tidytext::tidy(wine_tm_mod, "beta"))
+
+setorder(tm_beta, topic, -beta)
+
+tm_beta <-
+  tm_beta[, head(.SD, 5), by = "topic"]
+
+tm_beta <-
+  tm_beta[, .(term = paste(term, collapse = " ")), by = "topic"]
+
+# Gamma Matrix (Document-Topic)
+
+tm_gamma <-
+  as.data.table(tidytext::tidy(wine_tm_mod, "gamma"))
+
+tm_gamma <-
+  tm_gamma[, .(expected_prob = mean(gamma)), by = "topic"]
+
+tm_dt <-
+  merge(tm_gamma,
+        tm_beta,
+        by = "topic")
+
+ggplot(tm_dt, aes(x = reorder(topic, expected_prob), y = expected_prob,
+                  fill = as.factor(topic))) +
+  geom_col() +
+  geom_text(
+    aes(label = term),
+    hjust = 0,
+    nudge_y = .005
+  ) +
+  labs(
+    x = "",
+    y = "Expected Proportion"
+  ) +
+  coord_flip() +
+  scale_y_continuous(
+    limits = c(0,.2)
+  ) +
+  theme(
+    legend.position = "none",
+    panel.background = element_rect(
+      colour = "black",
+      fill = "white"
+    )
+  )
+
+```
+
+
+```{r}
+
+relevant_quotes <-
+  findThoughts(wine_tm_mod, eu_wine_reviews$description, n = 2)
+
+```
+
+### Topic 1 -- Acidity of Wine
+
+As shown in Figure \@ref(fig:tmModelRun), the main words associated with Topic 1 are: *acid*, *flavor*, *fresh*, *fruit*, and *fruiti*. The quotes below both use the words *fresh* and *acid* to describe the wines, suggesting that Topic 1 is capturing wine acidity. According to [this](https://en.wikipedia.org/wiki/Acids_in_wine#In_wine_tasting) article, the acidity of a wine refers to the "fresh, tart, and sour attributes". 
+
+
+```{r, layout="l-page", fig.align="center", fig.height=6, fig.width=12}
+plotQuote(relevant_quotes$docs[[1]], width = 60)
+```
+
+### Topic 4 -- Aging of Wine
+
+Topic 4 has the following top words associated with it: *fruit*, *age*, *tannin*, *year*, and *rich* (Figure \@ref(fig:tmModelRun)). Both quotes that follow describe the wines in relation to the wine's age, its intensity, and the level of tannins. From this, we can think of Topic 4 as capturing reviews towards those wines that have been [aged](https://en.wikipedia.org/wiki/Aging_of_wine).
+
+```{r, layout="l-page", fig.align="center", fig.height=6, fig.width=12}
+plotQuote(relevant_quotes$docs[[4]], width = 60)
+```
+
+### Topic 7 -- Aroma of Wine (Red)
+
+Topic 7 is associated with the following words: *spice*, *cheri*, *fruit*, *aroma*, and *soft* (Figure \@ref(fig:tmModelRun)). The two quotes associated with this topic show reviews that are centered upon the aroma of the wine, describing such things as the spice and tobacco. This topic can be discerned from Topic 9 as it appears that Topic 7 is specifically describing the aroma of red wines.
+
+```{r, layout="l-page", fig.align="center", fig.height=6, fig.width=12}
+plotQuote(relevant_quotes$docs[[7]], width = 60)
+```
+
+### Topic 9 -- Aroma of Wine (White)
+
+Topic 9 is associated with the following words: *aroma*, *white*, *fruit*, *fresh*, and *almond* (Figure \@ref(fig:tmModelRun)). From both quotes that follow, it can seen that the reviews are focused on the aromas of the wine, describing them in terms of citrus, cut grass, and white flower. As mentioned above, this topic is focused on the aromas of white wines, whilst Topic 7 was capturing reviews describing the aroma of red wines.
+
+```{r, layout="l-page", fig.align="center", fig.height=6, fig.width=12}
+plotQuote(relevant_quotes$docs[[9]], width = 60)
+```
+
+### Covariate Effects
+
+As stated above, the topic model included covariates for topic prevalence; these covariates were dummy coded with Italy as the baseline. The plots that follow show the difference between the baseline (Italy) and each condition (France and Spain). To remain consistent with the aforementioned topic modelling results, the covariate effects with only be discussed in relation to Topics 1, 4, 7, and 9.
+
+```{r}
+cov_effects <-
+  estimateEffect(
+    1:10 ~ country_France + country_Spain, 
+    stmobj = wine_tm_mod,
+    metadata = wine_reviews_prep$meta)
+
+```
+
+
+#### France compared to Italy
+
+Figure \@ref(fig:franceCov) presents the difference in topic prevalence between France and Italy. For Topic 1 and 4, the prevalence in reviews was greater for wines from France. Topic 7 and 9 were less likely in French wine reviews compared to Italian wine reviews. This may suggest that French wines are fresh and tart, probably when it comes to white wines. Whereas, for red wines they are more likely to be aged and bold in flavour. Italian wines reviews, on the other hand, have a higher propensity of topics associated with the aromas of the wine (i.e., Topics 7 and 9).
+
+```{r franceCov, layout="l-body-outset", fig.align="center", fig.cap="Topic prevalence differences between France and Italy (Italy is used as the baseline country).", fig.height=10, fig.width=20}
+
+plot(cov_effects, 
+     "country_France",
+     topics = 1:10,
+     cov.value1 = 1, cov.value2 = 0,
+     method = "difference",
+     labeltype = "custom",
+     custom.labels = c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5",
+                       "Topic 6", "Topic 7", "Topic 8", "Topic 9", "Topic 10")
+     )
+```
+
+#### Spain compared to Italy
+
+Figure \@ref(fig:spainCov) shows that there are no meaningful differences for the topic prevalence of Topic 1 or 4 between Spain and Italy. As with French wine reviews, Spanish wine reviews are less likely to contain topics about the aromas of the wine.
+
+```{r spainCov, layout="l-body-outset", fig.align="center", fig.cap="Topic prevalence differences between Spain and Italy (Italy is used as the baseline country).", fig.height=10, fig.width=20}
+
+plot(cov_effects, 
+     "country_Spain",
+     topics = 1:10,
+     cov.value1 = 1, cov.value2 = 0,
+     method = "difference",
+     labeltype = "custom",
+     custom.labels = c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5",
+                       "Topic 6", "Topic 7", "Topic 8", "Topic 9", "Topic 10")
+     )
+```
+
+# Summary
+
+Utilising different text-mining approaches, we have been able to explore a collection of wine reviews. Keyword extraction provided a succinct way of summarising wine reviews by both country and variety. Whereas, topic modelling provided greater depth in the exploration of wine reviews, particularly with the inclusion of covariates.

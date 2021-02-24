@@ -4,10 +4,10 @@ categories:
   - frasier
   - text mining
 description: |
-  In this post we undertake a descriptive and text mining analysis of the lines spoken on Frasier.
+  In this post I undertake a descriptive and text mining analysis of the lines spoken on Frasier.
 author:
   - name: Alex Wainwright
-    url: https://example.com/norajones
+    url: https://github.com/alexwhitelockw
 date: 02-06-2021
 output:
   distill::distill_article:
