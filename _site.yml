@@ -1,5 +1,6 @@
 name: "portfolio"
 title: "Alex Wainwright"
+google_analytics: "G-3X1Y20RSZP"
 description: |
   Alex Wainwright
 output_dir: "_site"
