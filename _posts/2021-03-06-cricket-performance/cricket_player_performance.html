@@ -1579,7 +1579,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </ul>
 <p>We can take this analysis a step further by calculating correlations between the season performances. From this point onward, the analysis will use those 81 players without missing values across the three seasons (2018/19, 2019/20, and 2020/21).</p>
 <p>When we correlated the performance (average runs) of players in 2018/19, we get a value of 0.74. As for 2020/21, the correlation value is 0.68. In both cases, the correlations are positive and large, yet they are not perfect. We can say that past performance is a good indicator of future performance, yet predictions will not be 100% accurate.</p>
-<p>A simple linear model now follows, wherein we regress performance in the 2019/20 season on the prior season’s performance (2018/19).</p>
+<p>A simple linear model now follows, wherein we regress performance in the 2019/20 season on the prior season’s performance (2018/19; Table <a href="#tab:predPerf2019">2</a>). Figure <a href="#fig:plot1920Model">1</a> plots the regression model of 2019/20 season performance on to 2018/19 season performance along with the regression line uncertainty.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>season_1920_model</span> <span class='op'>&lt;-</span>
@@ -1607,20 +1607,19 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <tr class="odd">
 <td style="text-align: left;">(Intercept)</td>
 <td style="text-align: right;">3.61</td>
-<td style="text-align: right;">1.46</td>
+<td style="text-align: right;">1.50</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><code>2018/19</code></td>
-<td style="text-align: right;">0.78</td>
+<td style="text-align: right;">0.77</td>
 <td style="text-align: right;">0.08</td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>Let’s demonstrate with the prediction of the 2019/20 performance presented in Table <a href="#tab:predPerf2019">2</a> (Figure <a href="#fig:plot1920Model">1</a> plots the regression model of 2019/20 season performance on to 2018/19 season performance along with the regression line uncertainty):</p>
 <ul>
 <li><p>Based on the model, if a player averaged 0 runs in the 2018/19 season, they are predicted to achieve an average run rate of 3.61 in the 2019/20 season.</p></li>
-<li><p>Each average run rate that is greater than 0 in the 2018/19 season results in an expected average run rate that is 0.78 higher than 3.61. As this coefficient is below 1, it is indicative of batting performance regressing to the mean. For example, if a player averaged 25 runs in 2018/19, they are predicted to average 22.87 runs in the 2019/20 season. In other words, whilst a player may be a highly skilled batsman, there is a degree of luck from match-to-match (e.g., tiredness or playing the wrong shot).</p></li>
+<li><p>Each average run rate that is greater than 0 in the 2018/19 season results in an expected average run rate that is 0.77 higher than 3.61. As this coefficient is below 1, it is indicative of batting performance regressing to the mean. For example, if a player averaged 25 runs in 2018/19, they are predicted to average 22.87 runs in the 2019/20 season. In other words, whilst a player may be a highly skilled batsman, there is a degree of luck from match-to-match (e.g., tiredness or playing the wrong shot).</p></li>
 <li><p>The residual standard deviation of the model is 8. This means that our model predicts the average run rate in 2019/20 to within 8 runs. So while previous performance may be important in future performance, it isn’t enough to make a perfect prediction.</p></li>
 </ul>
 <div class="layout-chunk" data-layout="l-body-outset">

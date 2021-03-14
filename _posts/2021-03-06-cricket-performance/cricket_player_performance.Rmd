@@ -92,7 +92,7 @@ We can take this analysis a step further by calculating correlations between the
 
 When we correlated the performance (average runs) of players in 2018/19, we get a value of `r round(cor(top_strikers_2019$'2018/19', top_strikers_2019$'2019/20'), 2)`. As for 2020/21, the correlation value is `r round(cor(top_strikers_2019$'2019/20', top_strikers_2019$'2020/21'), 2)`. In both cases, the correlations are positive and large, yet they are not perfect. We can say that past performance is a good indicator of future performance, yet predictions will not be 100% accurate.
 
-A simple linear model now follows, wherein we regress performance in the 2019/20 season on the prior season's performance (2018/19).
+A simple linear model now follows, wherein we regress performance in the 2019/20 season on the prior season's performance (2018/19; Table \@ref(tab:predPerf2019)). Figure \@ref(fig:plot1920Model) plots the regression model of 2019/20 season performance on to 2018/19 season performance along with the regression line uncertainty.
 
 ```{r predPerf2019, echo=TRUE, warning=F}
 
@@ -108,8 +108,6 @@ knitr::kable(
   caption = "Point estimates from the regression of 2019/20 performance on 2018/19 performance.")
 
 ```
-
-Let's demonstrate with the prediction of the 2019/20 performance presented in Table \@ref(tab:predPerf2019) (Figure \@ref(fig:plot1920Model) plots the regression model of 2019/20 season performance on to 2018/19 season performance along with the regression line uncertainty):
 
 - Based on the model, if a player averaged 0 runs in the 2018/19 season, they are predicted to achieve an average run rate of `r round(coef(season_1920_model)[1],2)` in the 2019/20 season.
 
