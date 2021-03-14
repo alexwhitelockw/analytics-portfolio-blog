@@ -1606,12 +1606,12 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">(Intercept)</td>
-<td style="text-align: right;">3.60</td>
-<td style="text-align: right;">1.50</td>
+<td style="text-align: right;">3.61</td>
+<td style="text-align: right;">1.46</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><code>2018/19</code></td>
-<td style="text-align: right;">0.77</td>
+<td style="text-align: right;">0.78</td>
 <td style="text-align: right;">0.08</td>
 </tr>
 </tbody>
@@ -1619,8 +1619,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </div>
 <p>Let’s demonstrate with the prediction of the 2019/20 performance presented in Table <a href="#tab:predPerf2019">2</a> (Figure <a href="#fig:plot1920Model">1</a> plots the regression model of 2019/20 season performance on to 2018/19 season performance along with the regression line uncertainty):</p>
 <ul>
-<li><p>Based on the model, if a player averaged 0 runs in the 2018/19 season, they are predicted to achieve an average run rate of 3.6 in the 2019/20 season.</p></li>
-<li><p>Each average run rate that is greater than 0 in the 2018/19 season results in an expected average run rate that is 0.77 higher than 3.6. As this coefficient is below 1, it is indicative of batting performance regressing to the mean. For example, if a player averaged 25 runs in 2018/19, they are predicted to average 22.87 runs in the 2019/20 season. In other words, whilst a player may be a highly skilled batsman, there is a degree of luck from match-to-match (e.g., tiredness or playing the wrong shot).</p></li>
+<li><p>Based on the model, if a player averaged 0 runs in the 2018/19 season, they are predicted to achieve an average run rate of 3.61 in the 2019/20 season.</p></li>
+<li><p>Each average run rate that is greater than 0 in the 2018/19 season results in an expected average run rate that is 0.78 higher than 3.61. As this coefficient is below 1, it is indicative of batting performance regressing to the mean. For example, if a player averaged 25 runs in 2018/19, they are predicted to average 22.87 runs in the 2019/20 season. In other words, whilst a player may be a highly skilled batsman, there is a degree of luck from match-to-match (e.g., tiredness or playing the wrong shot).</p></li>
 <li><p>The residual standard deviation of the model is 8. This means that our model predicts the average run rate in 2019/20 to within 8 runs. So while previous performance may be important in future performance, it isn’t enough to make a perfect prediction.</p></li>
 </ul>
 <div class="layout-chunk" data-layout="l-body-outset">
@@ -1632,7 +1632,7 @@ Figure 1: Point estimate line for the regression of 2019/20 season performance o
 </div>
 </div>
 <h1 id="summary">Summary</h1>
-<p>I’ve attempted to illustrate regression to the mean in cricket performances. As shown above, even though a player may perform well in a given year, this does not mean that future performances will be consistent. This is because performances are an imperfect measure of ability on account of random variations (i.e., a player may have had a lucky season).</p>
+<p>I’ve attempted to illustrate regression to the mean in cricket performances. As shown above, even though a player may perform well in a given year, this does not mean that future performances will be consistent. This is because performances are an imperfect measure of ability on account of random variations (i.e., a player may have had a lucky (or unlucky) season).</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->

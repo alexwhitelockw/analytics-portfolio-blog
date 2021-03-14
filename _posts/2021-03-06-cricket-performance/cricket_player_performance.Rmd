@@ -153,4 +153,4 @@ ggplot(top_strikers_2019, aes(x = `2018/19`, y = `2019/20`)) +
 
 # Summary
 
-I've attempted to illustrate regression to the mean in cricket performances. As shown above, even though a player may perform well in a given year, this does not mean that future performances will be consistent. This is because performances are an imperfect measure of ability on account of random variations (i.e., a player may have had a lucky season).
+I've attempted to illustrate regression to the mean in cricket performances. As shown above, even though a player may perform well in a given year, this does not mean that future performances will be consistent. This is because performances are an imperfect measure of ability on account of random variations (i.e., a player may have had a lucky (or unlucky) season).
