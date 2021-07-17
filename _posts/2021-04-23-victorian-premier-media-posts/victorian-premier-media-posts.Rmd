@@ -1,0 +1,305 @@
+---
+title: "Victorian Premier Media Posts"
+description: |
+  I use structural topic modelling to explore the Victorian premier media posts over the course of 2019.
+author:
+  - name: Alex Wainwright
+    url: https://github.com/alexwhitelockw
+date: 07-16-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+# Overview
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(data.table)
+library(ggplot2)
+library(lubridate)
+library(reticulate)
+library(stm)
+
+premier_media <- 
+  fread("premier_media_scrape.csv", header = T)
+
+```
+
+Using data extracted from [here](https://www.premier.vic.gov.au), we can explore how the Victorian Premier media posts change over the course of a year. Thus, I am trying to answer the question of how topic propensities in these media posts change with time? Dates of these posts spanned the time of 2016 to 2020. As I want to explore the change of topics over a year in recent posts, I only concentrate on 2019. 
+
+```{python cleanText}
+from gensim import corpora
+from gensim.models import ldaseqmodel
+from gensim.parsing import strip_numeric, strip_non_alphanum, strip_multiple_whitespaces, strip_punctuation, strip_short, remove_stopwords, stem_text
+import pandas as pd
+
+premier_media = r.premier_media
+
+# Clean Text Column
+
+premier_media["clean_content"] = premier_media["content"].str.lower()
+
+premier_media["clean_content"] = premier_media["clean_content"].apply(strip_punctuation)
+premier_media["clean_content"] = premier_media["clean_content"].apply(strip_numeric)
+premier_media["clean_content"] = premier_media["clean_content"].apply(strip_non_alphanum)
+premier_media["clean_content"] = premier_media["clean_content"].apply(strip_short)
+premier_media["clean_content"] = premier_media["clean_content"].apply(remove_stopwords)
+premier_media["clean_content"] = premier_media["clean_content"].apply(stem_text)
+```
+
+```{r preProcessText, cache=T}
+premier_media <- py$premier_media
+
+premier_media$date <- 
+  dmy(premier_media$date)
+
+premier_media$yday <-
+  yday(premier_media$date)
+
+premier_media <-
+  subset(premier_media, year(date) == 2019)
+
+processed_txt <-
+  textProcessor(
+    documents = premier_media$clean_content,
+    meta = premier_media, 
+    customstopwords = c("victoria", "victorian"),
+    verbose = F
+  )
+
+prep_txt <-
+  prepDocuments(
+    processed_txt$documents,
+    processed_txt$vocab,
+    processed_txt$meta,
+    verbose = F
+  )
+
+```
+
+# Model Extraction
+
+For brevity, I skip detail on pre-processing and identifying the best fitting model (7 topic for our purposes). 
+
+```{r fitStmModels, cache=T, results="hide"}
+tm_fit <-
+  selectModel(
+    prep_txt$documents,
+    prep_txt$vocab, 
+    data = prep_txt$meta,
+    K = 7,
+    prevalence = ~s(yday),
+    runs = 50,
+    seed = 25042021, 
+    verbose = F)
+
+tm_fit <-
+  tm_fit$runout[[7]]  # Select Model 1 for next steps
+
+```
+
+```{r topicProportions, layout="l-body-outset", fig.width=12, fig.cap="Expected topic proportions for the seven topic model. Local government projects occur most frequently in the premier media posts, whilst the topic about health occur least frequently."}
+
+# Expected Topic Proportions
+
+gamma_matrix <-
+  as.data.table(tidytext::tidy(tm_fit, "gamma"))
+
+gamma_matrix <-
+  gamma_matrix[, .(expected_proportion = mean(gamma)), by = .(topic)]
+
+# Topic Word Proportions
+
+beta_matrix <-
+  as.data.table(tidytext::tidy(tm_fit, "beta"))
+
+setorder(beta_matrix, topic, -beta)
+
+beta_matrix <- 
+  beta_matrix[, head(.SD, 5), by = "topic"]
+
+beta_matrix <-
+  beta_matrix[, .(top_words = paste0(term, collapse = " ")), by = "topic"]
+
+# Plot Expected Topic Proportions
+
+expected_topic_proportions <-
+  merge(gamma_matrix,
+        beta_matrix,
+        by = "topic")
+
+
+ggplot(expected_topic_proportions, aes(x = reorder(topic, expected_proportion), y = expected_proportion,
+                  colour = as.factor(topic), fill = as.factor(topic))) +
+  geom_col(
+    alpha = .2
+  ) +
+  geom_text(
+    aes(label = top_words),
+    hjust = 0,
+    nudge_y = .005,
+    colour = "black",
+    size = 4
+  ) +
+  labs(
+    title = "Expected Topic Proportions for the Seven Topic Model",
+    x = "",
+    y = "Expected Proportion"
+  ) +
+  coord_flip() +
+  scale_y_continuous(
+    limits = c(0,.3)
+  ) +
+  theme(
+    text = element_text(
+      size = 12
+    ),
+    legend.position = "none",
+    panel.background = element_rect(
+      colour = "white",
+      fill = "white"
+    ),
+    panel.grid.major = element_line(
+      size = .6,
+      colour = "lightgray"
+    ),
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(
+      colour = "white",
+      fill = "white"
+    )
+  )
+
+
+```
+
+Figure \@ref(fig:topicProportions) presents the expected topic proportions for the 7 topic model using the 2019 data. I provide the top 5 words per topic to aid interpretation. We can see that posts cover a variety of topics: local projects, community support, sport, transport, education, and health. 
+
+# Topic Exploration
+
+Let's explore the topics^[I choose only 3 topics so I don’t lapse into monotony]!
+
+```{r modelQuotes}
+
+txt <-
+  stringr::str_trunc(premier_media$content, 
+                     width = 200)
+
+tm_effects <-
+  estimateEffect(1:7 ~ s(yday), 
+                 tm_fit,
+                 prep_txt$meta)
+
+```
+
+
+## Topic One - Events
+
+Based on Figure \@ref(fig:topicProportions), we may conclude that Topic 1 is sports-based. The associated quotes actually show us that the topic captures any events in Victoria: art exhibitions, crickets, and motor sport. The plot shows the propensity of the topic being mentioned in a media post to be consistent across 2019. There are peaks at the start and end of the year. This coincides with the timing of various sporting events (AFLW, NRL, BBL).
+
+```{r topicOne, layout="l-page", width=15}
+
+topic_1_quotes <-
+  findThoughts(tm_fit,
+               txt,
+               topics = 1,
+               n = 3)
+
+par(mfrow=c(1,2),
+    mar=c(3,2,1,1))
+
+plotQuote(topic_1_quotes$docs$`Topic 1`, 
+          text.cex = .5,
+          width = 50)
+
+plot(tm_effects,
+     "yday",
+     method="continuous",
+     topics=1, 
+     printlegend = FALSE,
+     xaxt = "n"
+     )
+monthseq <- seq(from = as.Date("2019-01-01"),
+                to = as.Date("2019-12-01"), by = "month")
+monthnames <- months(monthseq)
+axis(1, at = as.numeric(monthseq) - min(as.numeric(monthseq)),
+     labels = monthnames)
+
+```
+
+## Topic Five - Community Support
+
+On words alone, Topic 5 captures media posts associated with supporting local communities and people (Figure \@ref(fig:topicProportions)). The examplar quotes support this conclusion. Quote 1 mentions the engagement of key stakeholders in advising the Victorian government on carer needs. Quote 2 is of a post mentioning new appointees to the Victorian Multicultural Commission. As a topic, the plot shows its propensity to be consistent across 2019.
+
+
+
+```{r, layout="l-page", width=15}
+
+topic_5_quotes <-
+  findThoughts(tm_fit,
+               txt,
+               topics = 5,
+               n = 3)
+
+par(mfrow=c(1,2),
+    mar=c(3,2,1,1))
+
+plotQuote(topic_5_quotes$docs$`Topic 5`, 
+          text.cex = .5,
+          width = 50)
+
+plot(tm_effects,
+     "yday",
+     method="continuous",
+     topics=5, 
+     printlegend = FALSE,
+     xaxt = "n"
+     )
+monthseq <- seq(from = as.Date("2019-01-01"),
+                to = as.Date("2019-12-01"), by = "month")
+monthnames <- months(monthseq)
+axis(1, at = as.numeric(monthseq) - min(as.numeric(monthseq)),
+     labels = monthnames)
+
+```
+
+## Topic Seven - Transportation
+
+Finally, we have Topic 7. Being a topic on transportation is apparent from the top topic words (Figure \@ref(fig:topicProportions)). The three topic quotes show media posts primarily addressing various works on transport routes (e.g., level crossing and intersections). Propensity to mention this topic in media posts shows peaks and troughs across 2019. These peaks are likely to be the announcement of construction blitzes prior to work beginning. Thus, troughs would coincide with the start of such works. 
+
+
+
+```{r, layout="l-page", width=15}
+
+topic_7_quotes <-
+  findThoughts(tm_fit,
+               txt,
+               topics = 7,
+               n = 3)
+
+par(mfrow=c(1,2),
+    mar=c(3,2,1,1))
+
+plotQuote(topic_7_quotes$docs$`Topic 7`, 
+          text.cex = .5,
+          width = 50)
+
+plot(tm_effects,
+     "yday",
+     method="continuous",
+     topics=7, 
+     printlegend = FALSE,
+     xaxt = "n"
+     )
+monthseq <- seq(from = as.Date("2019-01-01"),
+                to = as.Date("2019-12-01"), by = "month")
+monthnames <- months(monthseq)
+axis(1, at = as.numeric(monthseq) - min(as.numeric(monthseq)),
+     labels = monthnames)
+
+```
+
+# Summary
+
+After previously using structural topic modelling to explore wine reviews, I was curious to explore how the propensity to mention topics changes with time. The Victorian Premier media posts offered a good dataset for this purpose. The results answered the question I posed. For some topics, they are consistent across the year. Whereas, others (e.g., transportation) follow a pattern. 

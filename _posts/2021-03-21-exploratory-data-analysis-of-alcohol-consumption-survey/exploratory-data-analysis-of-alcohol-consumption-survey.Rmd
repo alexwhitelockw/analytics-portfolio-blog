@@ -1,0 +1,324 @@
+---
+title: "Exploratory Data Analysis of Alcohol Consumption Survey"
+description: |
+  A short description of the post.
+author:
+  - name: Alex Wainwright
+    url: https://github.com/alexwhitelockw
+date: 03-21-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(car)
+library(data.table)
+library(ggplot2)
+library(kableExtra)
+library(knitr)
+
+survey_data <-
+  fread("student-mat.csv")
+
+```
+
+```{r cleanDemographics}
+
+survey_data[, address := dplyr::case_when(
+  address == "U" ~ "Urban",
+  address == "R" ~ "Rural")]
+
+survey_data[, famsize := dplyr::case_when(
+  famsize == "GT3" ~ "Greater Than 3",
+  famsize == "LE3" ~ "Less Than or Equal to 3")]
+
+survey_data[, Pstatus := dplyr::case_when(
+  Pstatus == "T" ~ "Living Together",
+  Pstatus == "A" ~ "Apart")]
+
+survey_data[, Medu := dplyr::case_when(
+  Medu == "0" ~ "None",
+  Medu == "1" ~ "Primary Education (4th Grade)",
+  Medu == "2" ~ "5th to 9th Grade",
+  Medu == "3" ~ "Secondary Education",
+  Medu == "4" ~ "Higher Education"
+)]
+
+survey_data[, Fedu := dplyr::case_when(
+  Fedu == "0" ~ "None",
+  Fedu == "1" ~ "Primary Education (4th Grade)",
+  Fedu == "2" ~ "5th to 9th Grade",
+  Fedu == "3" ~ "Secondary Education",
+  Fedu == "4" ~ "Higher Education"
+)]
+
+```
+
+
+# Sample
+
+Our analysis uses the Math course data found on [Kaggle](https://www.kaggle.com/uciml/student-alcohol-consumption). The data refers to `r nrow(survey_data)` students from two schools (Gabriel Pereira, GP: `r sum(survey_data == "GP")`; Mousinho da Silveira, MS: `r sum(survey_data == "MS")`). Female students made up most the sample (Females: `r round(mean(survey_data$sex == "F") * 100)`\%). Ages ranged from `r min(survey_data$age)` to `r max(survey_data$age)` (median: `r median(survey_data$age)`; MAD: `r round(mad(survey_data$age), 2)`). Table \@ref(tab:demographicTable) provides a breakdown of the sample across additional demographics. 
+
+```{r demographicTable, fig.align="centre"}
+
+survey_data[, index := 1:nrow(.SD)]
+
+demographic_tbl <-
+  survey_data[, .(index, address, 
+                  famsize, Pstatus,
+                  Medu, Fedu)]
+
+demographic_tbl <-
+  melt(demographic_tbl,
+       id.vars = "index")
+
+demographic_tbl <-
+  demographic_tbl[, 
+                  .(N = .N), 
+                  by = c("variable", "value")]
+
+demographic_tbl[, 
+                `%` := round(N / sum(N) * 100),
+                by = "variable"]
+
+kbl(
+  demographic_tbl[, 2:4],
+  booktabs = T, 
+  col.names = c("", "N", "%"),
+  caption = "Demographic information for student sample. We can make several observations. Most students had an urban address. As for family details, we see higher responses for Greater than 3 and Living Together. Finally, mothers appeared to have a higher level of education compared to fathers."
+) %>% 
+  pack_rows(group_label = "Address",
+            1, 2) %>% 
+  pack_rows(group_label = "Family Size",
+            3, 4) %>% 
+  pack_rows(group_label = "Parent's Cohabitation Status",
+            5, 6) %>% 
+  pack_rows(group_label = "Mother's Education",
+            7, 11) %>% 
+  pack_rows(group_label = "Father's Education",
+            12, 16)  
+
+```
+
+
+# Variables
+
+The data contains `r length(survey_data)` variables. For this analysis, we are only going to concern ourselves with a subset of predictors: 
+
+- School
+- Sex
+- Age
+- Address
+- Family Size
+- Parent Cohabitation Status
+- Mother's Education
+- Father's Education
+- School Travel Time
+- Study Time
+- Past Class Failures
+- School Support
+- Family Support
+- Number of School Absences
+
+Our dependent variable of interest is the final mark attained in the course.
+
+# Exploring Data
+
+## Final Mark Distributions
+
+Let's start with visualising final marks. Figure \@ref(fig:g3Distribution) shows a pile up of students who achieved a final mark of 0 (`r sum(survey_data$G3 == 0)` in total; `r round(mean(survey_data$G3 == 0), 2)`\%). The median mark for students was `r median(survey_data$G3)` (MAD: `r round(mad(survey_data$G3), 2)`). We can take this a step further and explore mark variations across schools.
+
+
+```{r g3Distribution, fig.align="center", fig.cap="Distribution of final marks for the Math course. There is a clear peak around 11 marks, with a piling up of marks at 0."}
+with(survey_data, {
+  hist(G3, freq = F,
+       breaks = 'FD',
+       ylim = c(0, .15),
+       col = "white",
+       main = "", 
+       xlab = "Final Mark")
+  lines(adaptiveKernel(G3, from = 0), lwd=2, lty=1)
+  box()
+})
+
+```
+
+Figure \@ref(fig:g3SchoolDistribution) presents the distribution of final marks by school. We can see that GP marks have a greater dispersion compared to MS marks. This is likely attributed to the fact that the sample of GP students is `r round(nrow(survey_data[school == "GP"]) / nrow(survey_data[school == "MS"]), 2)` times higher than the MP student sample.
+
+```{r g3SchoolDistribution, fig.align="centre", fig.cap="GP has a greater distribution of marks compared to MS. This is expected given sample size differences. For GP, the average mark is ~11 compared to ~10 for MS. A mark of 0 appears as an outlier for MS, but not for GP."}
+ggplot(survey_data, aes(x = school, y = G3)) +
+  geom_boxplot() +
+  labs(
+    x = "School",
+    y = "Final Mark"
+  ) +
+  theme(
+    panel.background = element_rect(
+      colour = "black",
+      fill = "white"
+    )
+  )
+```
+
+
+### By Family Information
+
+We can explore marks across family information (Figure \@ref(fig:marksFamily)). For each variable, we observe trivial distributional differences in marks. 
+
+```{r marksFamily, fig.align="centre", fig.cap="Mark distributions across various family variables. We observe nothing in the way of mmeaningful differences."}
+
+family_marks <-
+  melt(
+  survey_data[, .(index, famsize, 
+                  Pstatus, Medu, Fedu,
+                  G3)],
+  id.vars = c("index", "G3")
+  )
+
+family_marks[,
+             variable := dplyr::case_when(
+               variable == "famsize" ~ "Family Size",
+               variable == "Pstatus" ~ "Parent Cohabitation Status",
+               variable == "Medu" ~ "Mother's Education",
+               variable == "Fedu" ~ "Father's Education"
+             )]
+
+ggplot(family_marks, aes(x = value, y = G3)) +
+  geom_boxplot() +
+  coord_flip() +
+  labs(
+    x = "",
+    y = "Final Mark"
+  ) +
+  theme(
+    panel.background = element_rect(
+      colour = "black",
+      fill = "white"
+    ),
+    strip.background = element_rect(
+      colour = "black",
+      fill = "white"
+    )
+  ) +
+  facet_wrap(~variable,
+             scales = "free", 
+             labeller = label_wrap_gen())
+
+```
+
+### By School Travel Time
+
+School travel time (hours) may be of importance. Spending more time traveling between locations would reduce study time. Figure \@ref(fig:markTravel) presents marks by travel time, facetted by school. Distributions do not suggest travel time to be important for final marks in Math. 
+
+```{r markTravel, fig.align="centre", fig.cap="Distribution of final marks by travel time (Hours), facetted by school. From visual inspection, no meaningful differences are found."}
+
+ggplot(survey_data, aes(x = traveltime, y = G3,
+                        group = traveltime)) +
+  geom_boxplot() +
+  labs(
+    x = "Home to School Travel Time (Hours)",
+    y = "Final Mark"
+  ) +
+  theme(
+    panel.background = element_rect(
+      colour = "black",
+      fill = "white"
+    ),
+    strip.background = element_rect(
+      colour = "black",
+      fill = "white"
+    )
+  ) +
+  facet_wrap(
+    ~school
+  )
+
+```
+
+### By Study Time
+
+We would expect study time (hours) to be a variable of importance in final mark attainment. One such reason is the better coverage and understanding of topics. Figure \@ref(fig:markstudyTime) presents these variables, again facetted by school. The plot adds weight to our expectations that marks improve with study time. The relation is not linear, with an eventual plateauing of final marks. We would not expect marks to increase linearly with each additional hour of studying. There will be random component (luck) involved in any exam and study time will not be a perfect predictor. 
+
+```{r markstudyTime, fig.align="centre", fig.cap="Each additional hour of study appears to improve the mark attained. Improvements appear more marked in MS, but this is caveated by the small sample size. Either way, the distributions suggest time spent studying to be beneficial for final mark. The relation is not linear, with average grades eventually levelling off at higher study times."}
+
+ggplot(survey_data, aes(x = studytime, y = G3,
+                        group = studytime)) +
+  geom_boxplot() +
+  labs(
+    x = "Study Time (Hours)",
+    y = "Final Mark"
+  ) +
+  theme(
+    panel.background = element_rect(
+      colour = "black",
+      fill = "white"
+    ),
+    strip.background = element_rect(
+      colour = "black",
+      fill = "white"
+    )
+  ) +
+  facet_wrap(
+    ~school,
+    scales = "free"
+  )
+
+```
+
+### By Previous Failures
+
+We expect an inverse association between past failures and marks. With each added failure, the final mark attained would be lower. Figure \@ref(fig:failuresMark) is indicative of this association. Marks lower with the increase in past failure. Akin to study time, this relationship is non-linear. For MS, mark distributions beyond 1 failure are quite variable. This is due to the small number of students failing at such rates (2 previous fails: `r sum(survey_data$failures == 2 & survey_data$school == "MS")` and `r sum(survey_data$failures == 2 & survey_data$school == "GP")` for MS and GP, respectively).
+
+```{r failuresMark, fig.align="centre", fig.cap="Final marks decline as previous failures increase. The relationship appears as non-linear. Few students fail more than once, which explains the skewed distributions at 2+ previous failures."}
+
+ggplot(survey_data, aes(x = failures, y = G3,
+                        group = failures)) +
+  geom_boxplot() +
+  labs(
+    x = "Number of Failues",
+    y = "Final Mark"
+  ) +
+  theme(
+    panel.background = element_rect(
+      colour = "black",
+      fill = "white"
+    ),
+    strip.background = element_rect(
+      colour = "black",
+      fill = "white"
+    )
+  )  +
+  facet_wrap(~school)
+
+```
+
+### By Support
+
+```{r}
+support_vars <-
+  melt(
+    survey_data[, .(index, school, G3, schoolsup, famsup)],
+    id.vars = c("index", "school", "G3")
+    )
+
+support_vars[,
+  variable := ifelse(variable == "schoolsup",
+                     "School Support",
+                     "Family Support")
+]
+
+support_vars[,
+  value := stringr::str_to_title(value)
+]
+  
+
+ggplot(support_vars, aes(x = value, y = G3)) +
+  geom_boxplot() +
+  facet_wrap(~school + variable)
+
+
+```
+
