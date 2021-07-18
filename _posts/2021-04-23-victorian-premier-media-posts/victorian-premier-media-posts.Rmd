@@ -1,5 +1,8 @@
 ---
 title: "Victorian Premier Media Posts"
+categories:
+  - text analysis
+  - victoria data
 description: |
   I use structural topic modelling to explore the Victorian premier media posts over the course of 2019.
 author:

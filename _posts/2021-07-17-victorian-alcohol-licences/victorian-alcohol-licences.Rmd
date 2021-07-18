@@ -1,0 +1,207 @@
+---
+title: "Victorian Alcohol Licences: A Correspondence Analysis"
+categories:
+  - correspondence analysis
+  - victoria data
+description: |
+  I look to use correspondence analysis to analyse Victorian alcohol licence categories.
+author:
+  - name: Alex Wainwright
+    url: https://github.com/alexwhitelockw
+date: 07-17-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# Libraries
+
+library(cowplot)
+library(data.table)
+library(FactoMineR)
+library(factoextra)
+library(ggplot2)
+library(kableExtra)
+library(readxl)
+
+# Read and Pre-Process Data
+
+licenceData <-  # Read licence data
+  as.data.table(
+    read_xlsx("current_victorian_licences_by_location.xlsx",
+              skip = 2)
+  )
+
+licenceData <-  # Remove any duplicates based on the columns of interest
+  unique(licenceData[, .(`Licence Num`, `Trading As`, Category,
+                         `Trading Hours`, `After 11 pm`, `Maximum Capacity`,
+                         Latitude, Longitude, Council,
+                         Region, `Metro/Regional`, Gaming)])
+
+```
+
+The general aim of this post was for me to learn how to use correspondence analysis. Data came from Data.Vic. [This post](http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/113-ca-correspondence-analysis-in-r-essentials/#graph-of-row-variables) and [this article](http://marketing-bulletin.massey.ac.nz/V14/MB_V14_T2_Bendixen.pdf) influenced the steps I took to analyse the data.
+
+# Licence Category by Region
+
+Let's start by creating a contingency table of licence category by region (Table \@ref(tab:categoryCount)). The row numbers are useful for interpreting the bi-plot that follows. The frequencies in the table show the Restaurant and Cafe Licence category to dominate across Metro areas, whilst the General Licence category does not dominate a region.
+
+```{r categoryCount, layout="l-body-outset"}
+
+set.seed(20210717)
+
+categoryCount <-  # Count the number of licence categories by region
+  licenceData[!is.na(Region) & Region != "OTHER", .(N = .N), by = c("Category", "Region")]
+
+categoryCount[, Region := stringr::str_to_title(Region)]  # Convert to title case
+
+categoryCount <- dcast(
+  categoryCount,
+  Region ~ Category,
+  value.var = "N",
+  fill = 0
+)
+
+kbl(
+  categoryCount,
+  row.names = T,
+  caption = "Licence category counts across 10 regions in Victoria."
+) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+# Correspondence Analysis
+
+Our next step is to use correspondence analysis. For this post, only two dimensions are extracted. The total inertia explained (`r 16.8 + 73.8`%) shows this to be a very good solution. 
+
+```{r caBiPlot, layout="l-body-outset", fig.height=8, fig.width = 14, fig.cap="Row and column profiles for based on the correspondence analysis of the licence category contingency table"}
+
+row.names(categoryCount) <- categoryCount$Council
+
+categoryCount[, Region := NULL]
+
+categoryCAModel <- 
+  CA(categoryCount, graph = F)
+
+factoextra::fviz_ca_biplot(categoryCAModel, repel = TRUE, 
+                           col.row = "#A62447",
+                           col.col = "#2D4034") +
+  theme(
+    panel.grid.major = element_line(
+      colour = "lightgray"
+    ),
+    panel.background = element_rect(
+      colour = "white",
+      fill = "white"
+    ),
+    plot.background = element_rect(
+      colour = "white",
+      fill = "white"
+    ),
+    text = element_text(
+      size = 14
+    )
+  )
+```
+
+Figure \@ref(fig:caBiPlot) plots the co-ordinates for both the rows and columns. From this, we can meaningfully compare row items to one another; this also applies to column items. However, comparisons between row and column items are not appropriate. In order to make such interpretations, we start by looking at the contribution each element makes. We can do this from the perspective of rows (the regions) or columns (the licence category). For this work, it’s more appropriate to interpret regions in relation to the licence category.
+
+## Column Contribution
+
+```{r columnContribution, layout="l-body-outset", fig.width=12, fig.cap="Contibution of each licence category to the total interia explained by each dimension. The red line indicates the expected average value. Thus, any value exceeding this line would be considered *significant*."}
+colDim1Contribution <- 
+  fviz_contrib(categoryCAModel, "col", 1,
+               alpha = .4,
+               color = "#2D4034",
+               fill = "#2D4034")
+
+colDim2Contribution <- 
+  fviz_contrib(categoryCAModel, "col", 2,
+               alpha = .4,
+               color = "#2D4034",
+               fill = "#2D4034")
+
+plot_grid(
+  colDim1Contribution,
+  colDim2Contribution
+)
+
+```
+
+Figure \@ref(fig:columnContribution) shows the contribution each licence category makes to dimensions 1 and 2.
+
+### Dimension 1
+
+For dimension 1, three licence categories exceed the expected average value (`r round(100/ncol(categoryCount), 2)`%): Producer’s Licence, Restaurant and Cafe Licence, and General Licence.
+
+The Producer and General Licence categories have positive coordinates (Table \@ref(tab:columnDimensions)) for dimension 1, whilst Restaurant and Cafe Licence has a negative coordinate. Thus, we can interpret this dimension as *Business Type*. On the positive-end, we have licence categories for producing alcohol and supplying liquor (on and off the premise). The negative-end is the licence category for providing alcohol in hospitality setting (restaurant or cafe). Thus, we have a dimension ranging from an alcohol licence for on-site consumption to licences permitting the production and take-away of alcohol. 
+
+### Dimension 2
+
+For dimension 2, three licence categories exceed the expected average value (`r round(100/ncol(categoryCount), 2)`%): General Licence, BYO Permit, and Late Night (On-Premises) Licence.
+
+General Licence and Late Night (On-Premises) Licence categories have positive coordinates for dimension 2. The BYO Permit licence category has a negative coordinate for dimension 2. This distinction suggests a dimension of *Supply Type*. One end is strictly purchasing alcohol on site, whilst the other allows customers to bring their own alcohol. 
+
+```{r columnDimensions}
+kbl(
+  get_ca_col(categoryCAModel)$coord[,1:2],
+  digits = 2,
+  caption = "Licence category coordinates for dimensions 1 and 2."
+) %>% 
+  kable_material()
+```
+
+## Row Positions
+
+Now that we've done the above steps, we can readily interpret the region positions in relation to the licence categories (Figure \@ref(fig:rowProfilePlot); Table \@ref(tab:categoryCount) translates the numeric value in the plot). For example, regions 3, 4, and 5 (Grampians, Hume, and Loddon Mallee) are wine regions. There would then be a greater requirement for a Producer's Licence here.
+
+```{r rowProfilePlot, layout="l-body-outset", fig.height=8, fig.width = 14, fig.cap="Row item positions relative to licence categories."}
+fviz_ca_row(categoryCAModel, repel = TRUE, 
+                           col.row = "#A62447") +
+  geom_label(
+    aes(x = .5,
+        y = 0),
+    label = "Producer's Licence"
+  ) +
+  geom_label(
+    aes(x = -.25,
+        y = 0),
+    label = "Restaurant and cafe Licence"
+  ) +
+  geom_label(
+    aes(x = 0,
+        y = 0.2),
+    label = "Late night (on-premises) Licence"
+  ) + 
+  geom_label(
+    aes(x = 0,
+        y = -0.25),
+    label = "BYO Permit"
+  ) +
+  theme(
+    panel.grid.major = element_line(
+      colour = "lightgray"
+    ),
+    panel.background = element_rect(
+      colour = "white",
+      fill = "white"
+    ),
+    plot.background = element_rect(
+      colour = "white",
+      fill = "white"
+    ),
+    text = element_text(
+      size = 14
+    )
+  )
+
+```
+# Overview
+
+Correspondence analysis of alcohol licence categories has offered an interesting, albeit obvious, insight. Metro area positions are relative to Restaurant and Cafe Licence, BYO Permit, and Late Night (On-Premises) Licence categories. Regional area positions are relative to the Producer’s Licence category. Despite this, it offered a useful way to analyse frequency data and will definitely use it again in the future!
+
