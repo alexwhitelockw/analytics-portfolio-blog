@@ -71,7 +71,7 @@ kbl(
   row.names = T,
   caption = "Licence category counts across 10 regions in Victoria."
 ) %>% 
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+  kable_classic_2()
 
 ```
 
