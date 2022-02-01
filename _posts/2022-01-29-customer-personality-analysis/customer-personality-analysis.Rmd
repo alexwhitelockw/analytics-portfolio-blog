@@ -1,0 +1,35 @@
+---
+title: "Customer Personality Analysis"
+description: |
+  A short description of the post.
+draft: true
+author:
+  - name: Alex Wainwright
+    url: https://github.com/alexwhitelockw
+date: 2022-01-29
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(data.table)
+library(ggplot2)
+```
+
+```{r}
+
+customer_data <-
+  fread("data/marketing_campaign.csv")
+
+
+ggplot(customer_data, aes(x = MntWines, fill = Education)) +
+  geom_density() +
+  facet_wrap(~Education, scales = "free")
+```
+
+
+

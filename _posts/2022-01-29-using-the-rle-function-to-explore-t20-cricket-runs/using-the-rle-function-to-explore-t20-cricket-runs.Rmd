@@ -1,0 +1,130 @@
+---
+title: "Computing Run Lengths of Runs in BBL"
+description: |
+  A demonstration of the rle function in R using BBL data.
+author:
+  - name: Alex Wainwright
+    url: https://github.com/alexwhitelockw
+date: 2022-01-29
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Background
+
+Run length encoding is a form of data compression, wherein a sequence is reduced to a value-count pair. It is considered lossless as the original information contained in the sequence is retained. For example, the sequence 001022 would be reduced to 0(2), 1(1), 0(1), and 2(2) value-count pairs. In R, this operation is carried out using the *rle* base function.
+
+First, we setup a vector of 10 random numbers between 1 and 5.
+
+```{r setup_vector}
+
+set.seed(31012022)
+
+example_vector <- 
+  sample(1:5, size = 10, replace = T)
+
+example_vector
+```
+
+Then we pass the vector to the *rle* function.
+
+```{r rle_example}
+
+example_rle <-
+  rle(example_vector)
+
+```
+
+The **example_rle** is a list containing two elements: lengths and values. Values correspond to those values in the original **example_vector**; whereas, lengths indicates the run count for the given value. 
+
+To access a value, we can run the following
+
+```{r rle_value_example, echo=TRUE, results='hide'}
+
+example_rle$values[4]  # Access the fourth value in the values vector
+
+```
+
+The length is accessed using
+
+```{r rle_length_example, echo=TRUE, results='hide'}
+
+example_rle$lengths[4]  # Access the fourth value in the lengths vector
+
+```
+
+What we learn is that the value `r example_rle$values[4]` has a run length of `r example_rle$lengths[4]` in the original vector.
+
+# Applied Example
+
+A potential use case for the **rle** function is to explore the run lengths of cricket runs. For this, we will use the BBL (Big Bash League) data from [Cricsheet](https://cricsheet.org).
+
+The below code reads the scores for each match within the BBL (excluding the BBL11 final). We then split the data by match and batting team as we want to explore run lengths for each team by match. As implied, we're looking at the whole innings as opposed to splitting the data by overs. Finally, for each match and batting team we look at the values of the max run lengths for each team; multiple values per match and batting team are a possibility. With this data, we'll look at the count of most frequent run lengths for each team.
+
+```{r read_data, echo=TRUE, warning=FALSE}
+
+file_path_list <- 
+  list.files("bbl_csv2/", full.names = T)  
+
+file_list <- lapply(file_path_list, function(file_path) {  # For each file path in list
+  if(grepl("[0-9]+.csv", file_path)) {  # read in if they follow a particular pattern.
+    read.csv(file_path)  # Some file paths have 'info' in the name - this removes such data.
+  }
+})
+
+bbl_match_details <- 
+  do.call(rbind, file_list)
+
+match_team_split <- 
+  split(bbl_match_details,  # Split data by batting team and match.
+        f = ~ match_id + batting_team)
+
+run_rle <- lapply(match_team_split, function(df) {
+  rle(df$runs_off_bat)  # Apply rle function to each dataset.
+})
+
+
+bbl_rle <- lapply(run_rle, function(df) {
+  index_max <- which(df$lengths == max(df$lengths))  # Identify indices where the value equals the max.
+  rle_df <- data.frame(
+    run_value = df$values[index_max],  # Create a dataframe based on above indices.
+    count_value = df$lengths[index_max]
+  )
+  return(rle_df)
+})
+
+bbl_rle <-
+  do.call(rbind, bbl_rle)
+
+bbl_rle$match_id <-
+  stringr::str_extract(row.names(bbl_rle), pattern = "[0-9]+")  # Extract match id
+
+bbl_rle$batting_team <-
+  stringr::str_extract(row.names(bbl_rle), pattern = "[A-Za-z ]+")  # Extract batting team name
+
+row.names(bbl_rle) <- NULL
+
+```
+
+The final data is outputted below, ranked (descending) by run values. We can see that only Brisbane Heat had a run value of 6 in relation to the maximum run lengths in a given match; this occurred twice over the course of the BBL.
+
+```{r rle_run_tbl, layout="l-body-outset"}
+rmarkdown::paged_table(
+  bbl_rle[order(-bbl_rle$run_value),] 
+)
+```
+
+As a final step, we can count the number of times a given run value was found to be the maximum run length within a match. We do this with the *tapply* function, giving **run_values** as the vector, **batting_team** as the index, and *table* as the function. We can see that the Strikers, Renegades, and Scorchers have only run values of 0 and 1 as their most frequent run lengths.
+
+```{r rle_tbl}
+
+tapply(bbl_rle$run_value, bbl_rle$batting_team, table)
+
+```
+
