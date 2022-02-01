@@ -1,5 +1,8 @@
 ---
 title: "Computing Run Lengths of Runs in BBL"
+categories:
+  - cricket
+  - rle
 description: |
   A demonstration of the rle function in R using BBL data.
 author:
