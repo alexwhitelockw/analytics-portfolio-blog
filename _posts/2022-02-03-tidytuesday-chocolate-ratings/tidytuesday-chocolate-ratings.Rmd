@@ -1,0 +1,255 @@
+---
+title: "TidyTuesday Chocolate Ratings"
+description: |
+  Using tidymodels to predict chocolate ratings based on the memorable characteristics.
+author:
+  - name: Alex Wainwright
+    url: https://github.com/alexwhitelockw
+date: 2022-02-03
+output:
+  distill::distill_article:
+    self_contained: false
+bibliography: references.bib
+---
+
+# Overview
+
+This is my first attempt at using the **tidymodels** package to build a predictive model. For this project, I use the tidytuesdayR [@hughes_2022] chocolate rating data from 18-01-2022. I used the following resources to help me with this project:
+
+- Julia Silge's [blog post](https://juliasilge.com/blog/chocolate-ratings/) on the same data
+- The [Tidy Modeling with R](https://www.tmwr.org/) book
+- The [Supervised Machine Learning for Text Analysis in R](https://smltar.com/) book
+
+```{r setup}
+
+# Libraries ---------------------------
+
+library(data.table)
+library(ggplot2)
+library(kableExtra)
+library(textrecipes)
+library(tidytext)
+library(tidytuesdayR)
+library(tidymodels)
+```
+
+```{r read_data, cache=TRUE}
+# Read Data ---------------------------
+
+chocolate_ratings <- 
+  tt_load("2022-01-18")
+
+chocolate_ratings <- 
+  as.data.table(
+    chocolate_ratings$chocolate
+  )
+
+```
+
+# Setting Up the Model
+
+The first step is to create the train/test split. We then pass the training set to the cross-validation sampling function; I have set the number of folds to 10.
+
+We then have the model engine. As outcome variable (rating) is on a scale of 1 to 4, a linear regression is used. Although more sophisticated models are available, I stick with linear regression given its my first go in using tidymodels!
+
+As above, the model will be the prediction of chocolate rating based on the memorable characteristics. The latter are the words used to describe the chocolate. We would expect the words to describe the chocolate to be related to the numeric rating. We wouldn't expect chocolate described as *chalky* or *acidic* to receive a high rating -- I could be wrong! Following the recipe specification, the descriptions are tokenized, filtered, and then re-weighted using tf-idf (term frequency inverse document frequency). It is important to note that we passed the tune function to the max number of tokens argument. This is a parameter we tune using the grid that follows -- 10 values between 100 and 200 are passed to the max tokens argument with each run.
+
+Finally, we run the model using the resampled data, the linear model engine, and parameter grid.
+
+```{r predictive_model}
+
+set.seed(03022022)
+
+chocolate_ratings_split <- initial_split(chocolate_ratings)  # Create train
+# and test data sets
+
+train_ratings <- training(chocolate_ratings_split)  # Extract training data
+
+train_cv_data <-  # Create 10 cross-validation splits
+  vfold_cv(
+    data = train_ratings,
+    v = 10
+    )
+
+rating_lm_mod <-  # Setup a linear regression engine
+  linear_reg() %>% 
+  set_engine("lm")
+
+rating_recipe <-  # Recipe is to predict rating based on characteristics of the product
+  recipe(rating ~ most_memorable_characteristics, data = train_ratings) %>%
+  step_tokenize(most_memorable_characteristics) %>%  
+  step_tokenfilter(most_memorable_characteristics, max_tokens = tune()) %>%  
+  step_tfidf(most_memorable_characteristics)
+# The tune function is passed to the token filter function - this is going to passed
+# to the grid search.
+
+rating_wf <-  # Create modelling workflow, contains: model engine and recipe
+  workflow() %>% 
+  add_model(rating_lm_mod) %>% 
+  add_recipe(rating_recipe)
+
+max_token_grid <-  # Create grid for max tokens ranging from 100 to 200; 10 
+  grid_regular(  # different values are given
+    max_tokens(range = c(1e2, 2e2)),
+    levels = 10
+    )
+
+rating_lm_output <-
+  tune_grid(
+    rating_wf, 
+    resamples = train_cv_data,
+    grid = max_token_grid,
+    metrics = metric_set(rmse, mae, mape),
+    control = control_resamples(save_pred = T)
+    )
+```
+
+# Selecting the Best Model
+
+Next, we collect the metrics from the linear regression models. Put differently, the metric (e.g., mean absolute error) values across each fold and max token value are averaged; Figure \@ref(fig:lmmetricplot) presents these values. We can see that models performed better with a larger number of tokens, up until 200 tokens.
+
+```{r lmmetricplot, layout="l-body-outset", fig.cap="Average metrics (MSE, MAPE, and RMSE) across 10 max token values."}
+rating_lm_output %>% 
+  collect_metrics() %>%  # Mean metric value for each unique metric and max token value
+  ggplot(aes(x = max_tokens, y = mean, colour = .metric)) +
+  geom_point(alpha = .3, size = 2) +
+  geom_line(alpha = .3, size = 1.5) +
+  facet_wrap(~.metric, scales = "free_y", ncol = 1) +
+  labs(
+    x = "Max Tokens",
+    y = "Mean"
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "none"
+  )
+```
+
+The best performing model can be selected as followed -- the mean absolute error is used for this selection. This model is then used to create a finalised workflow and fitted to the training and testing data.
+
+```{r lm_final_model}
+lm_best_mae <-  # Select the best model based on the mean absolute error
+  rating_lm_output %>% 
+  select_best(metric = "mae")
+
+finalised_lm_wf <-  # Finalise the workflow associated with the best MAE
+  rating_wf %>% 
+  finalize_workflow(lm_best_mae)
+
+final_model_fit <-  # Run the model and workflow on both the training and testing data
+  last_fit(finalised_lm_wf, 
+           chocolate_ratings_split,
+           metrics = metric_set(mae, rmse, rsq))
+```
+
+# Evaluating the Final Model
+
+Metrics for the final model are presented below. The model accounts for ~40% of the variance in chocolate ratings; however, the mean absolute error is large given the rating scale of 1-4. 
+
+```{r model_metrics}
+collect_metrics(final_model_fit) %>% 
+  kbl(
+    booktabs = T,
+    col.names = c("Metric", "Estimator", "Estimate", "Model"),
+    digits = 2,
+  ) %>% 
+  kable_material()
+```
+
+Figure \@ref(fig:plotresiduals) plots the actual values against the predicted values in the test data. It is clear that the model does not perform well. For instances where the actual rating is low (~1), the model tends to over-predict ratings. The model also tends to under-predict ratings for chocolate that received high ratings.
+
+```{r plotresiduals, layout="l-body-outset", fig.cap="Actual and predicted values. Large residuals are noted for chocolates that receive a rating below 3. In these cases, the model over-predicts the chocolate rating. At higher ratings, the model tends to underpredict the rating value."}
+collect_predictions(final_model_fit) %>% 
+  ggplot(aes(x = rating, y = .pred, colour = id)) +
+  geom_abline(color = "red") + 
+  geom_jitter(
+    alpha = .3
+  ) +
+  scale_colour_viridis_d(option = "plasma") +
+  theme_bw() +
+  theme(
+    legend.position = "none"
+  ) +
+  coord_obs_pred() +
+  labs(
+    x = "Rating",
+    y = "Prediction",
+    colour = "Fold"
+  )
+```
+
+We can go a step further and explore 10 instances with the largest absolute differences between actual and predicted values. Each instance is a chocolate that was not well rated; however, the predicted ratings were substantially higher. With characteristics such as *strong off flavor*, *potting soil*, and *very bitter*, it's concerning that the model predicts a high score for these chocolates.
+
+```{r abs_residuals}
+final_model_residuals <-
+  collect_predictions(final_model_fit) %>% 
+  mutate(
+    absolute_residual = abs(rating - .pred)
+  ) %>% 
+  slice_max(order_by = absolute_residual, n = 10)
+
+
+chocolate_ratings %>% 
+  slice(final_model_residuals$.row) %>% 
+  bind_cols(final_model_residuals %>% select(.pred)) %>% 
+  select(ref, most_memorable_characteristics, rating, .pred) %>% 
+  kbl(
+    booktabs = T,
+    digits = 2,
+    col.names = c("Row Number", "Memorable Characteristics", "Rating", "Prediction")) %>% 
+  kable_material()
+```
+
+We can predict the rating of new data as follows.
+
+```{r predict_new_data}
+
+predict(
+  final_model_fit$.workflow[[1]],  # Pass the finalised workflow
+  data.frame(
+    most_memorable_characteristics = "acidic, chemical")  # Pass a dataframe containing
+  ) %>%  # the column used to train the model.
+  kbl(
+    booktabs = T,
+    col.names = "Prediction",
+    digits = 2
+  ) %>% 
+  kable_material()
+```
+
+# Feature Importance
+
+As a last step, we can look at the importance of features in the model. To do this, we look at the top 10 point estimates based on whether the value exceeds 0 (Figure \@ref(fig:pointestimates). There is a lot of uncertainty in the point estimates above 0 (e.g. tropical); this is not the case for point estimates below 0. We can interpret the point estimate as follows. For a chocolate described as *bitter*, we expect the rating to be .67 lower on average.
+
+```{r pointestimates, layout="l-body-outset", fig.cap="Point estimates obtained from the final model. Most memorable characteristics with positive point estimates have a large amount of uncertainty. Negative point estimates have smaller standard errors."}
+
+extract_workflow(final_model_fit) %>% 
+  tidy() %>% 
+  filter(!grepl("Intercept", term)) %>% 
+  group_by(estimate > 0) %>% 
+  slice_max(abs(estimate), n = 10) %>% 
+  ungroup() %>% 
+  mutate(
+    term = stringr::str_remove(term, "tfidf_most_memorable_characteristics_")
+  ) %>% 
+  ggplot(aes(x = estimate, y = forcats::fct_reorder(term, estimate),
+             colour = estimate > 0)) +
+  geom_vline(
+    aes(xintercept = 0)
+  ) +
+  geom_point() +
+  geom_errorbarh(
+    aes(
+      xmin = estimate - std.error,
+      xmax = estimate + std.error
+    )
+  ) +
+  scale_colour_viridis_d(option = "E", direction = -1) +
+  theme_bw() +
+  labs(
+    x = "Estimate",
+    y = NULL
+  )
+
+```
+
