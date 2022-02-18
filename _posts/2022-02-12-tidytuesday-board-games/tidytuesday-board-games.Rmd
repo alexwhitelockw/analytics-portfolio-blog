@@ -1,0 +1,193 @@
+---
+title: "TidyTuesday Board Games"
+description: |
+  A short description of the post.
+author:
+  - name: Alex Wainwright
+    url: https://github.com/alexwhitelockw
+date: 2022-02-12
+output:
+  distill::distill_article:
+    self_contained: false
+draft: True
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# Libraries ---------------------------
+library(data.table)
+library(ggplot2)
+library(kableExtra)
+library(rmarkdown)
+library(tidymodels)
+library(textrecipes)
+```
+
+```{r read_data, cache=TRUE}
+# Read Data ---------------------------
+tuesdata <- 
+  tidytuesdayR::tt_load('2022-01-25')
+
+board_game_reviews <-
+  tuesdata$ratings
+
+board_game_details <-
+  tuesdata$details
+
+# Merge Data --------------------------
+
+board_game_ratings <-
+  as.data.table(merge(
+    board_game_reviews,
+    board_game_details,
+    by.x = c("id", "name"),
+    by.y = c("id", "primary"),
+    all.y = T
+  ))
+
+```
+
+# Exploratory Data Analysis
+
+We start by exploring various predictor variables (minimum number of players, maximum number of players, playing time (minutes), minimum age, and year) for the model. This is done using the median and range.
+
+The table shows some problematic values associated with the variables of interest:
+
+-   We have a minimum value of 0 for the minimum and maximum number of players, playing time, minimum age, and year.
+-   Playing time has a maximum value of 60000.
+-   Year has a maximum value of 3500.
+
+Unless a game is lasting for week or we are dealing with games produced over a 1000 years into the future, there are probably some problematic instances!
+
+```{r summary_stats}
+
+# Create Median Values ----------------
+
+median_summary <-
+  board_game_ratings[, .(
+    `Minimum Number Players` = median(minplayers),
+    `Maximum Number Players` = median(maxplayers),
+    `Playing Time` = median(playingtime),
+    `Minimum Age` = median(minage)
+  )]
+
+median_summary <-
+  melt(
+    median_summary,
+    variable.name = "Board Game Detail",
+    value.name = "Median"
+    )
+
+# Range Values ------------------------
+
+range_summary <-
+  board_game_ratings[, .(
+    `Minimum Number Players` = range(minplayers),
+    `Maximum Number Players` = range(maxplayers),
+    `Playing Time` = range(playingtime),
+    `Minimum Age` = range(minage),
+    `Year` = range(year, na.rm = T)
+  )]
+
+range_summary <-
+  melt(
+    range_summary,
+    variable.name = "Board Game Detail"
+    )
+
+range_summary[, variable := rep(c("Min", "Max"), times = 5)]
+
+range_summary <-
+  dcast(
+    range_summary,
+    `Board Game Detail` ~ variable
+    )
+
+board_game_details_summary <-
+  merge(
+    median_summary,
+    range_summary,
+    by = "Board Game Detail",
+    all.y = T
+  )
+
+# Display Summary Table ---------------
+
+board_game_details_summary[,c(1,2,4,3)] |>
+  kbl(
+    booktabs = T
+  ) |>
+  kable_material()
+
+```
+
+Below we filter to those instances with at least a 0 for the minimum and maximum number of players, playing time, minimum age, or year. Instances with years exceeding 2022 are also included.
+
+```{r problematic_details, layout="l-body-outset"}
+
+board_game_ratings[minplayers == 0 |
+                     maxplayers == 0 |
+                     playingtime == 0 | 
+                     minage == 0 | 
+                     year == 0 | 
+                     year > 2022,
+                   .(name, minplayers, maxplayers, playingtime, minage, year)] |>
+  paged_table()
+
+```
+
+We now remove the first set of problematic rows in the data.
+
+```{r remove_first_set}
+
+first_problematic_item_set <-
+  board_game_ratings[minplayers == 0 |
+                       maxplayers == 0 |
+                       playingtime == 0 |
+                       minage == 0 |
+                       year == 0 |
+                       year > 2022, id]
+
+board_game_ratings <-
+  board_game_ratings[!is.element(id, first_problematic_item_set)]
+
+```
+
+Figure plots the distributions for the remaining data. Problems are still present for some of the variables:
+
+-   We still have occasions where the maximum number of players is 999. This could be the result of no upper-bound being set. Either way, I can't see a player count being feasible.
+-   Playing time ranges from `r min(board_game_ratings$playingtime)` to `r max(board_game_ratings$playingtime)` minutes. The maximum playing time value seems excessive
+
+```{r plot_first_data_filter, layout="l-body-outset"}
+
+initial_removal_outliers <-
+  melt(
+    board_game_ratings[, .(minplayers,
+                           maxplayers, 
+                           playingtime,
+                           minage,
+                           year)]
+    ) 
+
+initial_removal_outliers[, variable := fcase(
+  variable == "minplayers", "Minimum Number of Players",
+  variable == "maxplayers", "Maximum Number of Players",
+  variable == "playingtime", "Playing Time",
+  variable == "minage", "Minimum Age",
+  variable == "year", "Year"
+)]
+
+initial_removal_outliers |>
+  ggplot(aes(x = value)) +
+  geom_histogram() +
+  labs(
+    x = NULL,
+    y = "Count"
+  ) +
+  facet_wrap(~variable,
+             scales = "free",
+             labeller = label_wrap_gen()) +
+  theme_bw() 
+
+```
