@@ -1,5 +1,22 @@
 [
   {
+    "path": "posts/2022-03-28-tracking-lak-topic-changes/",
+    "title": "Tracking LAK Topic Changes",
+    "description": "A short description of the post.",
+    "author": [
+      {
+        "name": "Alex Wainwright",
+        "url": "https://github.com/alexwhitelockw"
+      }
+    ],
+    "date": "2022-03-28",
+    "categories": [],
+    "contents": "\n\n\n\n\n\n\n\n\n\n\n\n\n",
+    "preview": "posts/2022-03-28-tracking-lak-topic-changes/tracking-lak-topic-changes_files/figure-html5/unnamed-chunk-1-1.png",
+    "last_modified": "2022-03-28T21:58:01+11:00",
+    "input_file": "tracking-lak-topic-changes.knit.md"
+  },
+  {
     "path": "posts/2022-02-03-tidytuesday-chocolate-ratings/",
     "title": "TidyTuesday Chocolate Ratings",
     "description": "Using tidymodels to predict chocolate ratings based on the memorable characteristics.",
