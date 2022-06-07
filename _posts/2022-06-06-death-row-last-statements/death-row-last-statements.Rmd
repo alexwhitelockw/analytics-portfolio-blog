@@ -1,0 +1,28 @@
+---
+title: "Death Row Last Statements"
+description: |
+  A short description of the post.
+author:
+  - name: Alex Wainwright
+    url: https://github.com/alexwhitelockw
+date: 2022-06-06
+output:
+  distill::distill_article:
+    self_contained: false
+draft: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(reticulate)
+```
+
+```{python}
+import bs4 import BeautifulSoup
+import requests
+
+death_sentence_ur = requests.get("")
+
+```
+
